@@ -7,9 +7,10 @@ A collection of ideas for improving and expanding the game.
 ## Gameplay Tweaks
 
 - [ ] Adjust speed/acceleration/braking feel
-- [ ] Tune the level difficulty curve
+- [x] Tune the level difficulty curve (7 levels with gradual progression)
 - [ ] Add more levels
-- [ ] Experiment with different traffic light patterns
+- [x] European-style traffic light cycle (red → yellow → green → blinking yellow → red)
+- [x] Tutorial level ("First Light") with single traffic light
 
 ---
 
@@ -18,6 +19,7 @@ A collection of ideas for improving and expanding the game.
 - [ ] Better car design or animations
 - [ ] More interesting backgrounds/scenery (different city districts, time of day)
 - [ ] Speedometer gauge instead of just numbers
+- [x] Ending animation (sunset scene with car driving into the distance)
 - [ ] Screen shake or effects when you fail
 - [ ] Particle effects (exhaust, brake dust)
 - [ ] Day/night cycle or themed levels (sunset, night drive)
@@ -29,7 +31,8 @@ A collection of ideas for improving and expanding the game.
 - [ ] Sound effects (engine hum, braking, light change beeps, success jingle)
 - [ ] Background music with tempo matching gameplay
 - [ ] A "ghost" showing your best run
-- [ ] Star rating based on how smoothly you drove (minimal speed changes = better score)
+- [x] Star rating based on how smoothly you drove (minimal speed changes = better score)
+- [x] Time tracking with best times per level
 - [ ] Level select screen
 - [ ] Mobile touch controls for publishing
 - [ ] Multiple car skins/unlockables
@@ -44,7 +47,8 @@ A collection of ideas for improving and expanding the game.
 - [ ] Better indication of upcoming light states (further draw distance)
 - [ ] Pause menu
 - [ ] Settings (volume, controls remapping)
-- [ ] Save progress to localStorage
+- [x] Save progress to localStorage (best times persisted)
+- [x] Accessibility improvements (ARIA labels for screen readers)
 
 ---
 
