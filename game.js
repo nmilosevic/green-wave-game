@@ -62,6 +62,30 @@ function formatTime(seconds) {
     return seconds.toFixed(1);
 }
 
+// Calculate star rating based on driving smoothness
+// Lower totalSpeedChange = smoother driving = more stars
+function calculateStars(speedChange, levelDistance) {
+    // Normalize speed change by level distance for fair comparison across levels
+    // speedChange is in km/h accumulated, levelDistance in pixels
+    const normalizedChange = speedChange / (levelDistance / 100);
+
+    // Thresholds tuned for gameplay feel:
+    // < 20: very smooth driving, minimal corrections
+    // < 50: some adjustments needed
+    // >= 50: lots of speed changes
+    if (normalizedChange < 20) {
+        return 3;
+    } else if (normalizedChange < 50) {
+        return 2;
+    } else {
+        return 1;
+    }
+}
+
+function getStarDisplay(stars) {
+    return '\u2605'.repeat(stars) + '\u2606'.repeat(3 - stars);
+}
+
 // Game constants
 const ROAD_Y = 250;
 const ROAD_HEIGHT = 100;
@@ -88,6 +112,10 @@ let carWorldX = 0; // Car's position in the world
 let lightsPassed = 0;
 let trafficLights = [];
 let keys = { gas: false, brake: false };
+
+// Smoothness tracking for star rating
+let totalSpeedChange = 0; // Accumulated absolute speed changes
+let lastSpeed = 0; // Previous frame's speed for comparison
 
 // Level definitions
 // Each light has: position (x), cycle timing (greenDuration, redDuration), and phase offset
@@ -168,6 +196,10 @@ function initLevel(levelNum) {
     lightsPassed = 0;
     gameState = 'playing';
     gameTime = 0;
+
+    // Reset smoothness tracking
+    totalSpeedChange = 0;
+    lastSpeed = level.startSpeed;
 
     // Create traffic lights for this level
     trafficLights = level.lights.map(config => ({
@@ -293,6 +325,11 @@ function winLevel() {
     const bestTimes = getBestTimes();
     const bestTime = bestTimes[currentLevel];
 
+    // Calculate star rating based on smoothness
+    const level = levels[currentLevel - 1];
+    const stars = calculateStars(totalSpeedChange, level.finishX);
+    const starDisplay = getStarDisplay(stars);
+
     let timeText = `Time: ${formatTime(finishTime)}s`;
     if (isNewRecord) {
         timeText += ' - New Record!';
@@ -303,14 +340,14 @@ function winLevel() {
     if (currentLevel >= levels.length) {
         showMessage(
             'Congratulations!',
-            `You mastered the Green Wave!\n${timeText}`,
+            `You mastered the Green Wave!\n${starDisplay}\n${timeText}`,
             'Play Again',
             () => initLevel(1)
         );
     } else {
         showMessage(
             'Level Complete!',
-            `"${levels[currentLevel - 1].name}"\n${timeText}`,
+            `"${levels[currentLevel - 1].name}"\n${starDisplay}\n${timeText}`,
             'Next Level',
             () => initLevel(currentLevel + 1)
         );
@@ -349,6 +386,12 @@ function update(deltaTime) {
 
     // Clamp speed
     carSpeed = Math.max(0, Math.min(MAX_SPEED, carSpeed));
+
+    // Track speed changes for smoothness rating (only count intentional changes, not friction)
+    if (keys.gas || keys.brake) {
+        totalSpeedChange += Math.abs(carSpeed - lastSpeed);
+    }
+    lastSpeed = carSpeed;
 
     // Check for stopped (failure) only when fully stopped and not accelerating
     if (carSpeed === 0 && !keys.gas) {
