@@ -112,12 +112,12 @@
 </head>
 <body>
     <div id="gameContainer">
-        <div id="hud">
-            <div class="hud-item">Level: <span id="levelDisplay">1</span></div>
-            <div class="hud-item">Speed: <span id="speedDisplay">0</span> km/h</div>
-            <div class="hud-item">Lights Passed: <span id="lightsDisplay">0</span> / <span id="totalLightsDisplay">0</span></div>
-        </div>
-        <canvas id="gameCanvas" width="1000" height="400"></canvas>
+        <section id="hud" aria-label="Game statistics">
+            <div class="hud-item">Level: <span id="levelDisplay" aria-live="polite">1</span></div>
+            <div class="hud-item">Speed: <span id="speedDisplay" aria-live="polite">0</span> km/h</div>
+            <div class="hud-item">Lights Passed: <span id="lightsDisplay" aria-live="polite">0</span> / <span id="totalLightsDisplay" aria-live="polite">0</span></div>
+        </section>
+        <canvas id="gameCanvas" width="1000" height="400" aria-label="Green Wave game canvas - use W or Arrow Up to accelerate, S or Arrow Down to brake" role="img"></canvas>
         <div id="controls">
             <kbd>W</kbd> or <kbd>↑</kbd> Gas &nbsp;&nbsp;|&nbsp;&nbsp;
             <kbd>S</kbd> or <kbd>↓</kbd> Brake &nbsp;&nbsp;|&nbsp;&nbsp;
@@ -125,7 +125,7 @@
         </div>
     </div>
 
-    <div id="message">
+    <div id="message" role="alertdialog" aria-labelledby="messageTitle" aria-describedby="messageText">
         <h2 id="messageTitle">Level Complete!</h2>
         <p id="messageText">You caught the green wave!</p>
         <button id="messageButton">Next Level</button>
