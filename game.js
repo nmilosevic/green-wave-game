@@ -26,10 +26,41 @@ const speedDisplay = document.getElementById('speedDisplay');
 const lightsDisplay = document.getElementById('lightsDisplay');
 const totalLightsDisplay = document.getElementById('totalLightsDisplay');
 const levelDisplay = document.getElementById('levelDisplay');
+const timeDisplay = document.getElementById('timeDisplay');
 const messageDiv = document.getElementById('message');
 const messageTitle = document.getElementById('messageTitle');
 const messageText = document.getElementById('messageText');
 const messageButton = document.getElementById('messageButton');
+
+// Best times storage
+const STORAGE_KEY = 'greenWaveBestTimes';
+
+function getBestTimes() {
+    try {
+        const stored = localStorage.getItem(STORAGE_KEY);
+        return stored ? JSON.parse(stored) : {};
+    } catch (e) {
+        return {};
+    }
+}
+
+function saveBestTime(level, time) {
+    const bestTimes = getBestTimes();
+    if (!bestTimes[level] || time < bestTimes[level]) {
+        bestTimes[level] = time;
+        try {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(bestTimes));
+        } catch (e) {
+            // localStorage might be unavailable
+        }
+        return true; // New record
+    }
+    return false;
+}
+
+function formatTime(seconds) {
+    return seconds.toFixed(1);
+}
 
 // Game constants
 const ROAD_Y = 250;
@@ -257,17 +288,29 @@ function hideMessage() {
 // Game over states
 function winLevel() {
     gameState = 'won';
+    const finishTime = gameTime;
+    const isNewRecord = saveBestTime(currentLevel, finishTime);
+    const bestTimes = getBestTimes();
+    const bestTime = bestTimes[currentLevel];
+
+    let timeText = `Time: ${formatTime(finishTime)}s`;
+    if (isNewRecord) {
+        timeText += ' - New Record!';
+    } else if (bestTime) {
+        timeText += ` (Best: ${formatTime(bestTime)}s)`;
+    }
+
     if (currentLevel >= levels.length) {
         showMessage(
             'Congratulations!',
-            'You mastered the Green Wave!',
+            `You mastered the Green Wave!\n${timeText}`,
             'Play Again',
             () => initLevel(1)
         );
     } else {
         showMessage(
             'Level Complete!',
-            `You caught the green wave on "${levels[currentLevel - 1].name}"!`,
+            `"${levels[currentLevel - 1].name}"\n${timeText}`,
             'Next Level',
             () => initLevel(currentLevel + 1)
         );
@@ -321,8 +364,8 @@ function update(deltaTime) {
     // Move car in world
     carWorldX += pixelsPerSecond * deltaTime;
 
-    // Check traffic lights - use actual front of car for accurate collision feel
-    const carFront = carWorldX + CAR_WIDTH;
+    // Check traffic lights - car is drawn centered at CAR_X, so front is at carWorldX + CAR_WIDTH/2
+    const carFront = carWorldX + CAR_WIDTH / 2;
 
     for (const light of trafficLights) {
         if (!light.passed && carFront > light.x) {
@@ -346,6 +389,9 @@ function update(deltaTime) {
 
     // Update speed display
     speedDisplay.textContent = Math.round(carSpeed);
+
+    // Update time display
+    timeDisplay.textContent = formatTime(gameTime);
 }
 
 // Draw game
