@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Green Wave</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #1a1a2e;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            overflow: hidden;
+        }
+
+        #gameContainer {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+        }
+
+        #hud {
+            display: flex;
+            gap: 30px;
+            color: #fff;
+            font-size: 18px;
+        }
+
+        .hud-item {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 10px 20px;
+            border-radius: 8px;
+        }
+
+        .hud-item span {
+            color: #4ecca3;
+            font-weight: bold;
+        }
+
+        #gameCanvas {
+            border: 3px solid #4ecca3;
+            border-radius: 8px;
+            background: #16213e;
+        }
+
+        #controls {
+            color: #888;
+            font-size: 14px;
+            text-align: center;
+        }
+
+        #controls kbd {
+            background: #333;
+            color: #fff;
+            padding: 4px 8px;
+            border-radius: 4px;
+            margin: 0 3px;
+        }
+
+        #message {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.9);
+            color: #fff;
+            padding: 40px 60px;
+            border-radius: 15px;
+            text-align: center;
+            display: none;
+            z-index: 100;
+        }
+
+        #message h2 {
+            font-size: 36px;
+            margin-bottom: 15px;
+        }
+
+        #message p {
+            font-size: 18px;
+            margin-bottom: 20px;
+            color: #888;
+        }
+
+        #message button {
+            background: #4ecca3;
+            color: #1a1a2e;
+            border: none;
+            padding: 12px 30px;
+            font-size: 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: transform 0.1s;
+        }
+
+        #message button:hover {
+            transform: scale(1.05);
+        }
+
+        .success h2 { color: #4ecca3; }
+        .failure h2 { color: #e74c3c; }
+    </style>
+</head>
+<body>
+    <div id="gameContainer">
+        <div id="hud">
+            <div class="hud-item">Level: <span id="levelDisplay">1</span></div>
+            <div class="hud-item">Speed: <span id="speedDisplay">0</span> km/h</div>
+            <div class="hud-item">Lights Passed: <span id="lightsDisplay">0</span> / <span id="totalLightsDisplay">0</span></div>
+        </div>
+        <canvas id="gameCanvas" width="1000" height="400"></canvas>
+        <div id="controls">
+            <kbd>W</kbd> or <kbd>↑</kbd> Gas &nbsp;&nbsp;|&nbsp;&nbsp;
+            <kbd>S</kbd> or <kbd>↓</kbd> Brake &nbsp;&nbsp;|&nbsp;&nbsp;
+            <kbd>R</kbd> Restart Level
+        </div>
+    </div>
+
+    <div id="message">
+        <h2 id="messageTitle">Level Complete!</h2>
+        <p id="messageText">You caught the green wave!</p>
+        <button id="messageButton">Next Level</button>
+    </div>
+
+    <script src="game.js"></script>
+</body>
+</html>
