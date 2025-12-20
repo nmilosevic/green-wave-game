@@ -105,7 +105,7 @@ const YELLOW_BEFORE_GREEN = 1.0; // Yellow phase before green (preparing to go)
 const YELLOW_AFTER_GREEN = 1.5; // Blinking yellow after green (warning)
 
 // Game state
-let gameState = 'playing'; // 'playing', 'won', 'lost'
+let gameState = 'playing'; // 'playing', 'won', 'lost', 'ending'
 let currentLevel = 1;
 let carSpeed = 50; // Starting speed in km/h
 let carWorldX = 0; // Car's position in the world
@@ -117,12 +117,36 @@ let keys = { gas: false, brake: false };
 let totalSpeedChange = 0; // Accumulated absolute speed changes
 let lastSpeed = 0; // Previous frame's speed for comparison
 
+// Ending animation state
+let endingTime = 0;
+const ENDING_DURATION = 12; // seconds for full animation
+
 // Level definitions
 // Each light has: position (x), cycle timing (greenDuration, redDuration), and phase offset
 const levels = [
     {
+        // Tutorial: Just one light with long green, teaches basic controls
+        name: "First Light",
+        startSpeed: 40,
+        lights: [
+            { x: 600, greenDuration: 4, redDuration: 2, offset: 0 },
+        ],
+        finishX: 900
+    },
+    {
+        // Two lights, introduces timing between lights
         name: "Easy Start",
         startSpeed: 40,
+        lights: [
+            { x: 500, greenDuration: 3.5, redDuration: 2, offset: 0 },
+            { x: 1000, greenDuration: 3.5, redDuration: 2, offset: 1.5 },
+        ],
+        finishX: 1300
+    },
+    {
+        // Three lights, first real challenge
+        name: "Finding the Rhythm",
+        startSpeed: 45,
         lights: [
             { x: 500, greenDuration: 3, redDuration: 2, offset: 0 },
             { x: 900, greenDuration: 3, redDuration: 2, offset: 1 },
@@ -131,7 +155,8 @@ const levels = [
         finishX: 1600
     },
     {
-        name: "Finding the Rhythm",
+        // Four lights with tighter timing
+        name: "Keep the Pace",
         startSpeed: 50,
         lights: [
             { x: 400, greenDuration: 2.5, redDuration: 2.5, offset: 0 },
@@ -142,6 +167,7 @@ const levels = [
         finishX: 1600
     },
     {
+        // Mixed timing requires speed adjustment
         name: "Speed Adjustment",
         startSpeed: 60,
         lights: [
@@ -154,6 +180,7 @@ const levels = [
         finishX: 2000
     },
     {
+        // Long level with many lights
         name: "The Long Road",
         startSpeed: 55,
         lights: [
@@ -168,6 +195,7 @@ const levels = [
         finishX: 2300
     },
     {
+        // Short greens, requires patience and precise timing
         name: "Patience Required",
         startSpeed: 70,
         lights: [
@@ -338,12 +366,11 @@ function winLevel() {
     }
 
     if (currentLevel >= levels.length) {
-        showMessage(
-            'Congratulations!',
-            `You mastered the Green Wave!\n${starDisplay}\n${timeText}`,
-            'Play Again',
-            () => initLevel(1)
-        );
+        // Start the ending animation instead of showing a message
+        gameState = 'ending';
+        endingTime = 0;
+        hideMessage();
+        return;
     } else {
         showMessage(
             'Level Complete!',
@@ -661,6 +688,237 @@ function drawPedals() {
     ctx.fillText('BRK', canvas.width - 117, pedalY + 16);
 }
 
+// Ending animation - car driving into the sunset
+function drawEndingAnimation(time) {
+    const progress = Math.min(time / ENDING_DURATION, 1);
+
+    // Sky gradient - sunset colors
+    const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
+    gradient.addColorStop(0, '#1a0a2e');      // Deep purple at top
+    gradient.addColorStop(0.3, '#4a1942');    // Purple
+    gradient.addColorStop(0.5, '#c94b4b');    // Red-orange
+    gradient.addColorStop(0.7, '#f09819');    // Orange
+    gradient.addColorStop(0.85, '#ffcc66');   // Yellow-orange near horizon
+    gradient.addColorStop(1, '#f09819');      // Orange at bottom
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // Sun - large, setting behind horizon
+    const sunY = canvas.height * 0.55 + progress * 30; // Slowly sinking
+    const sunRadius = 60;
+    const sunGradient = ctx.createRadialGradient(
+        canvas.width / 2, sunY, 0,
+        canvas.width / 2, sunY, sunRadius * 1.5
+    );
+    sunGradient.addColorStop(0, '#fff5cc');
+    sunGradient.addColorStop(0.3, '#ffcc00');
+    sunGradient.addColorStop(0.7, '#ff8800');
+    sunGradient.addColorStop(1, 'transparent');
+    ctx.fillStyle = sunGradient;
+    ctx.beginPath();
+    ctx.arc(canvas.width / 2, sunY, sunRadius * 1.5, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Sun core
+    ctx.fillStyle = '#ffffcc';
+    ctx.beginPath();
+    ctx.arc(canvas.width / 2, sunY, sunRadius, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Road - perspective lines converging to horizon
+    const horizonY = canvas.height * 0.55;
+    const vanishingX = canvas.width / 2;
+
+    // Road surface
+    ctx.fillStyle = '#2a2a2a';
+    ctx.beginPath();
+    ctx.moveTo(vanishingX, horizonY);
+    ctx.lineTo(0, canvas.height);
+    ctx.lineTo(canvas.width, canvas.height);
+    ctx.closePath();
+    ctx.fill();
+
+    // Road markings - dashed center line receding into distance
+    ctx.strokeStyle = '#ffcc00';
+    ctx.lineWidth = 2;
+    const numDashes = 15;
+    for (let i = 0; i < numDashes; i++) {
+        const t = i / numDashes;
+        const perspectiveT = Math.pow(t, 1.5); // Non-linear for perspective
+        const y1 = horizonY + (canvas.height - horizonY) * perspectiveT;
+        const y2 = horizonY + (canvas.height - horizonY) * Math.pow((i + 0.4) / numDashes, 1.5);
+        const dashWidth = 2 + (1 - perspectiveT) * 6;
+
+        ctx.lineWidth = dashWidth;
+        ctx.beginPath();
+        ctx.moveTo(vanishingX, y1);
+        ctx.lineTo(vanishingX, Math.min(y2, canvas.height));
+        ctx.stroke();
+    }
+
+    // Traffic lights in the distance - all green, getting smaller toward horizon
+    const lightPositions = [0.15, 0.25, 0.38, 0.52, 0.68];
+    for (const pos of lightPositions) {
+        const perspectiveT = Math.pow(pos, 1.3);
+        const y = horizonY + (canvas.height - horizonY) * perspectiveT;
+        const scale = 0.2 + (1 - pos) * 0.5;
+
+        // Slightly offset from center (alternating sides)
+        const sideOffset = (lightPositions.indexOf(pos) % 2 === 0 ? 1 : -1) * (80 * scale);
+        const x = vanishingX + sideOffset * (1 - perspectiveT * 0.5);
+
+        // Pole
+        ctx.fillStyle = '#333';
+        ctx.fillRect(x - 2 * scale, y - 50 * scale, 4 * scale, 50 * scale);
+
+        // Light housing
+        ctx.fillStyle = '#222';
+        ctx.fillRect(x - 8 * scale, y - 60 * scale, 16 * scale, 25 * scale);
+
+        // Green light - glowing
+        ctx.beginPath();
+        ctx.arc(x, y - 47 * scale, 5 * scale, 0, Math.PI * 2);
+        ctx.fillStyle = '#44ff44';
+        ctx.fill();
+        ctx.shadowColor = '#44ff44';
+        ctx.shadowBlur = 15 * scale;
+        ctx.fill();
+        ctx.shadowBlur = 0;
+    }
+
+    // Car from behind - silhouette style
+    const carScale = 1.2;
+    const carX = canvas.width / 2;
+    const carY = canvas.height - 80;
+    const carWidth = 120 * carScale;
+    const carHeight = 50 * carScale;
+
+    // Car body shadow/silhouette
+    ctx.fillStyle = '#1a1a2e';
+
+    // Main body
+    ctx.beginPath();
+    ctx.roundRect(carX - carWidth/2, carY, carWidth, carHeight, 8);
+    ctx.fill();
+
+    // Roof/cabin
+    const cabinWidth = carWidth * 0.7;
+    const cabinHeight = 35 * carScale;
+    ctx.beginPath();
+    ctx.roundRect(carX - cabinWidth/2, carY - cabinHeight + 5, cabinWidth, cabinHeight, 6);
+    ctx.fill();
+
+    // Rear window - warm sunset reflection
+    const windowGradient = ctx.createLinearGradient(
+        carX - cabinWidth/2 + 8, carY - cabinHeight + 10,
+        carX + cabinWidth/2 - 8, carY
+    );
+    windowGradient.addColorStop(0, '#ff8844');
+    windowGradient.addColorStop(0.5, '#ffaa66');
+    windowGradient.addColorStop(1, '#ff6633');
+    ctx.fillStyle = windowGradient;
+    ctx.beginPath();
+    ctx.roundRect(
+        carX - cabinWidth/2 + 8,
+        carY - cabinHeight + 10,
+        cabinWidth - 16,
+        cabinHeight - 15,
+        4
+    );
+    ctx.fill();
+
+    // Two silhouettes in the car - dad and child
+    ctx.fillStyle = '#1a1a2e';
+
+    // Dad silhouette (driver, left side from behind)
+    const dadX = carX - cabinWidth/4;
+    const dadY = carY - cabinHeight + 18;
+    // Head
+    ctx.beginPath();
+    ctx.arc(dadX, dadY + 5, 10 * carScale, 0, Math.PI * 2);
+    ctx.fill();
+    // Shoulders
+    ctx.beginPath();
+    ctx.ellipse(dadX, dadY + 20, 14 * carScale, 8 * carScale, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Child silhouette (passenger, right side from behind, smaller)
+    const kidX = carX + cabinWidth/4;
+    const kidY = carY - cabinHeight + 22;
+    // Head (smaller)
+    ctx.beginPath();
+    ctx.arc(kidX, kidY + 3, 7 * carScale, 0, Math.PI * 2);
+    ctx.fill();
+    // Shoulders (smaller)
+    ctx.beginPath();
+    ctx.ellipse(kidX, kidY + 14, 10 * carScale, 6 * carScale, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Tail lights - glowing red
+    ctx.fillStyle = '#ff3333';
+    ctx.shadowColor = '#ff3333';
+    ctx.shadowBlur = 15;
+    // Left tail light
+    ctx.beginPath();
+    ctx.roundRect(carX - carWidth/2 + 5, carY + 10, 15, 8, 2);
+    ctx.fill();
+    // Right tail light
+    ctx.beginPath();
+    ctx.roundRect(carX + carWidth/2 - 20, carY + 10, 15, 8, 2);
+    ctx.fill();
+    ctx.shadowBlur = 0;
+
+    // Wheels (partial, from behind)
+    ctx.fillStyle = '#111';
+    ctx.beginPath();
+    ctx.ellipse(carX - carWidth/2 + 15, carY + carHeight - 5, 12, 8, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.ellipse(carX + carWidth/2 - 15, carY + carHeight - 5, 12, 8, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Fade in text after a moment
+    if (time > 3) {
+        const textAlpha = Math.min((time - 3) / 2, 1);
+        ctx.fillStyle = `rgba(255, 255, 255, ${textAlpha})`;
+        ctx.font = 'italic 24px Georgia, serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('"If you drive at just the right speed..."', canvas.width / 2, 50);
+    }
+
+    if (time > 6) {
+        const textAlpha = Math.min((time - 6) / 2, 1);
+        ctx.fillStyle = `rgba(255, 255, 255, ${textAlpha})`;
+        ctx.font = 'italic 24px Georgia, serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('"...you\'ll catch every green light."', canvas.width / 2, 85);
+    }
+
+    // Final message and button prompt
+    if (time > 9) {
+        const textAlpha = Math.min((time - 9) / 2, 1);
+        ctx.fillStyle = `rgba(78, 204, 163, ${textAlpha})`;
+        ctx.font = 'bold 18px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('Thanks for playing', canvas.width / 2, canvas.height - 30);
+
+        // Show the play again message
+        if (time > 10) {
+            showMessage(
+                'The Green Wave',
+                'For the drives we remember.',
+                'Play Again',
+                () => {
+                    gameState = 'playing';
+                    initLevel(1);
+                }
+            );
+        }
+    }
+
+    ctx.textAlign = 'left'; // Reset
+}
+
 // Game loop
 function gameLoop(timestamp) {
     if (!lastTimestamp) lastTimestamp = timestamp;
@@ -670,7 +928,19 @@ function gameLoop(timestamp) {
     // If delta is too large (e.g., tab was backgrounded), skip this frame
     // rather than running in slow motion or jumping ahead
     if (rawDeltaTime > 0.1) {
-        draw();
+        if (gameState === 'ending') {
+            drawEndingAnimation(endingTime);
+        } else {
+            draw();
+        }
+        requestAnimationFrame(gameLoop);
+        return;
+    }
+
+    // Handle ending animation state
+    if (gameState === 'ending') {
+        endingTime += rawDeltaTime;
+        drawEndingAnimation(endingTime);
         requestAnimationFrame(gameLoop);
         return;
     }

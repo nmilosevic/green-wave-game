@@ -17,7 +17,18 @@ That memory stuck with me. The idea that somewhere between too fast and too slow
 - Release both keys to coast (gradual slowdown from friction)
 
 **Objective:**
-Pass through all traffic lights while they're green and reach the finish line.
+Pass through all traffic lights while they're green (or yellow) and reach the finish line.
+
+**Traffic Light Cycle:**
+The game uses a European-style traffic light sequence:
+- **Red** - Stop (running this fails the level)
+- **Yellow** - Caution, about to turn green (you can pass)
+- **Green** - Go!
+- **Blinking Yellow** - Warning, about to turn red (you can still pass)
+
+**Scoring:**
+- **Time** - Your completion time is tracked, with best times saved per level
+- **Stars** - Earn up to 3 stars based on driving smoothness (fewer speed changes = more stars)
 
 **Fail Conditions:**
 - Running a red light
@@ -25,7 +36,9 @@ Pass through all traffic lights while they're green and reach the finish line.
 
 **Tips:**
 - Watch the timer bars on traffic lights - they show how long until the light changes
-- Sometimes slowing down early lets you catch the next green
+- Yellow before green gives you a heads-up to prepare
+- Blinking yellow means hurry or slow down for the next cycle
+- Smooth, consistent speed earns more stars than constant adjustments
 - Each level has a rhythm to discover - it's a puzzle, not a race
 
 ## Running the Game
@@ -48,6 +61,8 @@ green-wave-game/
 - No external dependencies
 - Runs entirely client-side
 - Compatible with all modern browsers
+- Best times persisted in localStorage
+- Accessible with ARIA labels for screen readers
 
 ## License
 
