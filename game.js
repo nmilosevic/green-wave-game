@@ -4,6 +4,23 @@
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 
+// Polyfill for roundRect (Safari < 16, older browsers)
+if (!ctx.roundRect) {
+    CanvasRenderingContext2D.prototype.roundRect = function(x, y, w, h, radii) {
+        const r = typeof radii === 'number' ? radii : (radii[0] || 0);
+        this.moveTo(x + r, y);
+        this.lineTo(x + w - r, y);
+        this.quadraticCurveTo(x + w, y, x + w, y + r);
+        this.lineTo(x + w, y + h - r);
+        this.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+        this.lineTo(x + r, y + h);
+        this.quadraticCurveTo(x, y + h, x, y + h - r);
+        this.lineTo(x, y + r);
+        this.quadraticCurveTo(x, y, x + r, y);
+        this.closePath();
+    };
+}
+
 // Display elements
 const speedDisplay = document.getElementById('speedDisplay');
 const lightsDisplay = document.getElementById('lightsDisplay');
@@ -119,6 +136,7 @@ function initLevel(levelNum) {
     carWorldX = 0;
     lightsPassed = 0;
     gameState = 'playing';
+    gameTime = 0;
 
     // Create traffic lights for this level
     trafficLights = level.lights.map(config => ({
@@ -289,21 +307,22 @@ function update(deltaTime) {
     // Clamp speed
     carSpeed = Math.max(0, Math.min(MAX_SPEED, carSpeed));
 
-    // Check for stopped (failure)
-    if (carSpeed < MIN_SPEED_THRESHOLD) {
-        carSpeed = 0;
+    // Check for stopped (failure) only when fully stopped and not accelerating
+    if (carSpeed === 0 && !keys.gas) {
         loseGame("You stopped! Keep moving to catch the green wave.");
         return;
     }
 
-    // Convert km/h to pixels per second (1 km/h = ~3 pixels/sec for good feel)
+    // Convert km/h to pixels per second
+    // Using 3 pixels per km/h gives a good game feel: at 60 km/h the car moves
+    // 180 pixels/sec, covering the ~1600-2300 pixel levels in 9-13 seconds
     const pixelsPerSecond = carSpeed * 3;
 
     // Move car in world
     carWorldX += pixelsPerSecond * deltaTime;
 
-    // Check traffic lights
-    const carFront = carWorldX + CAR_WIDTH / 2;
+    // Check traffic lights - use actual front of car for accurate collision feel
+    const carFront = carWorldX + CAR_WIDTH;
 
     for (const light of trafficLights) {
         if (!light.passed && carFront > light.x) {
@@ -389,6 +408,13 @@ function draw() {
     drawPedals();
 }
 
+// Simple hash function for deterministic window pattern based on position
+function seededRandom(x, y) {
+    const seed = x * 374761393 + y * 668265263;
+    const hash = (seed ^ (seed >> 13)) * 1274126177;
+    return ((hash ^ (hash >> 16)) & 0xffff) / 0xffff;
+}
+
 function drawBuildings(offset) {
     ctx.fillStyle = '#1a1a2e';
     const buildingData = [
@@ -404,11 +430,12 @@ function drawBuildings(offset) {
         const building = buildingData[buildingIndex % buildingData.length];
         ctx.fillRect(x, ROAD_Y - building.h, building.w, building.h);
 
-        // Windows
+        // Windows - use seeded random based on world position for consistent pattern
         ctx.fillStyle = 'rgba(255, 255, 200, 0.3)';
         for (let wy = ROAD_Y - building.h + 10; wy < ROAD_Y - 10; wy += 20) {
             for (let wx = x + 8; wx < x + building.w - 8; wx += 15) {
-                if (Math.random() > 0.3) {
+                const windowWorldX = Math.round(wx + offset);
+                if (seededRandom(windowWorldX, wy) > 0.3) {
                     ctx.fillRect(wx, wy, 8, 12);
                 }
             }
@@ -548,10 +575,18 @@ function drawPedals() {
 // Game loop
 function gameLoop(timestamp) {
     if (!lastTimestamp) lastTimestamp = timestamp;
-    const deltaTime = Math.min((timestamp - lastTimestamp) / 1000, 0.1); // Cap delta to prevent jumps
+    const rawDeltaTime = (timestamp - lastTimestamp) / 1000;
     lastTimestamp = timestamp;
 
-    update(deltaTime);
+    // If delta is too large (e.g., tab was backgrounded), skip this frame
+    // rather than running in slow motion or jumping ahead
+    if (rawDeltaTime > 0.1) {
+        draw();
+        requestAnimationFrame(gameLoop);
+        return;
+    }
+
+    update(rawDeltaTime);
     draw();
 
     requestAnimationFrame(gameLoop);
