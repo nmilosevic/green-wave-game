@@ -96,6 +96,9 @@ const CAR_X = 150; // Fixed screen position of the car
 // Wheel animation
 let wheelRotation = 0; // Current wheel rotation angle in radians
 
+// Birds in the sky
+let birds = [];
+
 // Physics constants
 const MAX_SPEED = 120; // km/h
 const ACCELERATION = 40; // km/h per second
@@ -245,6 +248,9 @@ function initLevel(levelNum) {
     levelDisplay.textContent = levelNum;
     totalLightsDisplay.textContent = trafficLights.length;
     lightsDisplay.textContent = 0;
+
+    // Initialize birds
+    initBirds();
 
     hideMessage();
 }
@@ -471,33 +477,40 @@ function update(deltaTime) {
 
     // Update time display
     timeDisplay.textContent = formatTime(gameTime);
+
+    // Update birds
+    updateBirds(deltaTime);
 }
 
 // Draw game
 function draw() {
     // Clear canvas
-    ctx.fillStyle = '#16213e';
+    ctx.fillStyle = '#87CEEB';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
     // Camera offset (car stays at fixed screen position)
     const cameraX = carWorldX - CAR_X;
 
-    // Draw sky gradient
+    // Draw sky gradient (daylight blue sky)
     const skyGradient = ctx.createLinearGradient(0, 0, 0, ROAD_Y);
-    skyGradient.addColorStop(0, '#0f0f23');
-    skyGradient.addColorStop(1, '#1a1a3e');
+    skyGradient.addColorStop(0, '#4A90D9');
+    skyGradient.addColorStop(0.5, '#87CEEB');
+    skyGradient.addColorStop(1, '#B0E0E6');
     ctx.fillStyle = skyGradient;
     ctx.fillRect(0, 0, canvas.width, ROAD_Y);
+
+    // Draw birds in the sky
+    drawBirds();
 
     // Draw distant buildings (parallax)
     drawBuildings(cameraX * 0.3);
 
     // Draw road
-    ctx.fillStyle = '#2d2d44';
+    ctx.fillStyle = '#555555';
     ctx.fillRect(0, ROAD_Y, canvas.width, ROAD_HEIGHT);
 
     // Draw road lines
-    ctx.strokeStyle = '#4a4a5a';
+    ctx.strokeStyle = '#EEEEEE';
     ctx.lineWidth = 2;
     ctx.setLineDash([30, 20]);
     ctx.beginPath();
@@ -507,12 +520,12 @@ function draw() {
     ctx.stroke();
     ctx.setLineDash([]);
 
-    // Draw finish line
+    // Draw finish line (on left/upper lane only)
     const level = levels[currentLevel - 1];
     const finishScreenX = level.finishX - cameraX;
     if (finishScreenX > -50 && finishScreenX < canvas.width + 50) {
         ctx.fillStyle = '#4ecca3';
-        ctx.fillRect(finishScreenX, ROAD_Y, 10, ROAD_HEIGHT);
+        ctx.fillRect(finishScreenX, ROAD_Y, 10, ROAD_HEIGHT / 2);
         ctx.fillStyle = '#fff';
         ctx.font = '14px sans-serif';
         ctx.fillText('FINISH', finishScreenX - 15, ROAD_Y - 10);
@@ -526,8 +539,8 @@ function draw() {
         }
     }
 
-    // Draw car
-    drawCar(CAR_X, ROAD_Y + ROAD_HEIGHT / 2);
+    // Draw car (on left/upper lane, under the traffic lights)
+    drawCar(CAR_X, ROAD_Y + ROAD_HEIGHT / 4);
 
     // Draw pedal indicators
     drawPedals();
@@ -540,8 +553,59 @@ function seededRandom(x, y) {
     return ((hash ^ (hash >> 16)) & 0xffff) / 0xffff;
 }
 
+// Initialize birds flying in the sky
+function initBirds() {
+    birds = [];
+    const numBirds = 5 + Math.floor(Math.random() * 4); // 5-8 birds
+    for (let i = 0; i < numBirds; i++) {
+        birds.push({
+            x: Math.random() * canvas.width,
+            y: 30 + Math.random() * 80, // Upper sky area
+            speed: 20 + Math.random() * 40, // Pixels per second
+            wingPhase: Math.random() * Math.PI * 2, // Wing flap animation offset
+            size: 3 + Math.random() * 3 // Bird size variation
+        });
+    }
+}
+
+// Update bird positions
+function updateBirds(deltaTime) {
+    for (const bird of birds) {
+        // Birds fly from right to left
+        bird.x -= bird.speed * deltaTime;
+        // Animate wings
+        bird.wingPhase += deltaTime * 8;
+        // Wrap around when off screen
+        if (bird.x < -20) {
+            bird.x = canvas.width + 20;
+            bird.y = 30 + Math.random() * 80;
+        }
+    }
+}
+
+// Draw birds as simple V shapes with flapping wings
+function drawBirds() {
+    ctx.strokeStyle = '#333333';
+    ctx.lineWidth = 2;
+    ctx.lineCap = 'round';
+
+    for (const bird of birds) {
+        const wingUp = Math.sin(bird.wingPhase) * 0.4;
+        const s = bird.size;
+
+        ctx.beginPath();
+        // Left wing
+        ctx.moveTo(bird.x - s * 2, bird.y + wingUp * s);
+        ctx.lineTo(bird.x, bird.y);
+        // Right wing
+        ctx.lineTo(bird.x + s * 2, bird.y + wingUp * s);
+        ctx.stroke();
+    }
+}
+
 function drawBuildings(offset) {
-    ctx.fillStyle = '#1a1a2e';
+    // Daylight building colors
+    const buildingColors = ['#8B9DC3', '#9DAED4', '#7A8BB5', '#A5B5CF', '#6B7BA5'];
     const buildingData = [
         { w: 60, h: 80 }, { w: 40, h: 120 }, { w: 80, h: 60 },
         { w: 50, h: 100 }, { w: 70, h: 70 }, { w: 45, h: 90 },
@@ -553,10 +617,11 @@ function drawBuildings(offset) {
 
     while (x < canvas.width + 100) {
         const building = buildingData[buildingIndex % buildingData.length];
+        ctx.fillStyle = buildingColors[buildingIndex % buildingColors.length];
         ctx.fillRect(x, ROAD_Y - building.h, building.w, building.h);
 
-        // Windows - use seeded random based on world position for consistent pattern
-        ctx.fillStyle = 'rgba(255, 255, 200, 0.3)';
+        // Windows - daylight reflections (blue sky reflection)
+        ctx.fillStyle = 'rgba(135, 206, 235, 0.5)';
         for (let wy = ROAD_Y - building.h + 10; wy < ROAD_Y - 10; wy += 20) {
             for (let wx = x + 8; wx < x + building.w - 8; wx += 15) {
                 const windowWorldX = Math.round(wx + offset);
@@ -565,7 +630,6 @@ function drawBuildings(offset) {
                 }
             }
         }
-        ctx.fillStyle = '#1a1a2e';
 
         x += building.w + 30 + (buildingIndex % 3) * 20;
         buildingIndex++;
@@ -579,59 +643,132 @@ function drawTrafficLight(screenX, light) {
     // For blinking yellow, determine if we're in the "on" phase of the blink
     const blinkOn = state === 'blinking-yellow' && Math.floor(gameTime * 4) % 2 === 0;
 
-    // Pole
-    ctx.fillStyle = '#333';
-    ctx.fillRect(screenX - 3, ROAD_Y - 140, 6, 140);
+    // Scale to match car proportions (car is ~36px tall total)
+    const poleBaseY = ROAD_Y;
+    const poleTopY = ROAD_Y - 95;
 
-    // Light housing (taller now for 3 lights)
+    // Main pole (galvanized steel look)
+    ctx.fillStyle = '#666';
+    ctx.fillRect(screenX - 3, poleTopY + 15, 6, poleBaseY - poleTopY - 15);
+    // Pole highlight
+    ctx.fillStyle = '#888';
+    ctx.fillRect(screenX - 3, poleTopY + 15, 2, poleBaseY - poleTopY - 15);
+
+    // Horizontal arm extending toward driver (to the right)
+    const armLength = 28;
+    const armY = poleTopY + 18;
+    ctx.fillStyle = '#666';
+    ctx.fillRect(screenX, armY - 3, armLength, 5);
+    ctx.fillStyle = '#888';
+    ctx.fillRect(screenX, armY - 3, armLength, 1);
+
+    // Traffic light housing - angled toward driver (3D perspective)
+    const lightX = screenX + armLength - 4;
+    const lightY = armY;
+    const housingW = 16;
+    const housingH = 48;
+    const perspective = 5; // 3D depth effect
+
+    // Housing back (darker, visible due to angle)
     ctx.fillStyle = '#222';
-    ctx.fillRect(screenX - 15, ROAD_Y - 165, 30, 80);
-    ctx.strokeStyle = '#444';
-    ctx.lineWidth = 2;
-    ctx.strokeRect(screenX - 15, ROAD_Y - 165, 30, 80);
-
-    // Red light (top)
     ctx.beginPath();
-    ctx.arc(screenX, ROAD_Y - 145, 10, 0, Math.PI * 2);
-    ctx.fillStyle = state === 'red' ? '#ff4444' : '#441111';
+    ctx.moveTo(lightX, lightY);
+    ctx.lineTo(lightX + perspective, lightY - 4);
+    ctx.lineTo(lightX + perspective, lightY + housingH - 4);
+    ctx.lineTo(lightX, lightY + housingH);
+    ctx.closePath();
     ctx.fill();
-    if (state === 'red') {
-        ctx.shadowColor = '#ff4444';
-        ctx.shadowBlur = 20;
+
+    // Housing front face (facing driver)
+    ctx.fillStyle = '#333';
+    ctx.fillRect(lightX - housingW, lightY, housingW, housingH);
+
+    // Housing top edge (3D)
+    ctx.fillStyle = '#444';
+    ctx.beginPath();
+    ctx.moveTo(lightX - housingW, lightY);
+    ctx.lineTo(lightX - housingW + perspective, lightY - 4);
+    ctx.lineTo(lightX + perspective, lightY - 4);
+    ctx.lineTo(lightX, lightY);
+    ctx.closePath();
+    ctx.fill();
+
+    // Visor/hood over each light (realistic detail)
+    const visorDepth = 4;
+    const lightSpacing = 14;
+    const lightRadius = 5;
+    const firstLightY = lightY + 10;
+
+    for (let i = 0; i < 3; i++) {
+        const ly = firstLightY + i * lightSpacing;
+        const lx = lightX - housingW / 2 - 1;
+
+        // Visor hood
+        ctx.fillStyle = '#222';
+        ctx.beginPath();
+        ctx.moveTo(lx - lightRadius - 1, ly - lightRadius);
+        ctx.lineTo(lx - lightRadius - 1 - visorDepth, ly - lightRadius - 2);
+        ctx.lineTo(lx + lightRadius + 1 - visorDepth, ly - lightRadius - 2);
+        ctx.lineTo(lx + lightRadius + 1, ly - lightRadius);
+        ctx.closePath();
+        ctx.fill();
+
+        // Light housing ring (black bezel)
+        ctx.fillStyle = '#111';
+        ctx.beginPath();
+        ctx.arc(lx, ly, lightRadius + 1, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Determine light state and color
+        let isOn = false;
+        let onColor, offColor;
+
+        if (i === 0) { // Red
+            isOn = state === 'red';
+            onColor = '#ff3333';
+            offColor = '#331111';
+        } else if (i === 1) { // Yellow
+            isOn = state === 'yellow' || blinkOn;
+            onColor = '#ffcc00';
+            offColor = '#332800';
+        } else { // Green
+            isOn = state === 'green';
+            onColor = '#33ff33';
+            offColor = '#113311';
+        }
+
+        // Light lens
+        ctx.fillStyle = isOn ? onColor : offColor;
+        if (isOn) {
+            ctx.shadowColor = onColor;
+            ctx.shadowBlur = 10;
+        }
+        ctx.beginPath();
+        ctx.arc(lx, ly, lightRadius, 0, Math.PI * 2);
         ctx.fill();
         ctx.shadowBlur = 0;
+
+        // Glass reflection highlight (when on)
+        if (isOn) {
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+            ctx.beginPath();
+            ctx.arc(lx - 1, ly - 1, lightRadius / 3, 0, Math.PI * 2);
+            ctx.fill();
+        }
     }
 
-    // Yellow light (middle)
-    const yellowActive = state === 'yellow' || blinkOn;
-    ctx.beginPath();
-    ctx.arc(screenX, ROAD_Y - 120, 10, 0, Math.PI * 2);
-    ctx.fillStyle = yellowActive ? '#ffcc00' : '#443300';
-    ctx.fill();
-    if (yellowActive) {
-        ctx.shadowColor = '#ffcc00';
-        ctx.shadowBlur = 20;
-        ctx.fill();
-        ctx.shadowBlur = 0;
-    }
-
-    // Green light (bottom)
-    ctx.beginPath();
-    ctx.arc(screenX, ROAD_Y - 95, 10, 0, Math.PI * 2);
-    ctx.fillStyle = state === 'green' ? '#44ff44' : '#114411';
-    ctx.fill();
-    if (state === 'green') {
-        ctx.shadowColor = '#44ff44';
-        ctx.shadowBlur = 20;
-        ctx.fill();
-        ctx.shadowBlur = 0;
-    }
-
-    // Timer indicator (small bar showing time until change)
+    // Timer indicator bar (above the traffic light housing)
     const maxTime = getCurrentPhaseDuration(light, gameTime);
     const progress = timeUntilChange / maxTime;
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
-    ctx.fillRect(screenX - 12, ROAD_Y - 170, 24 * progress, 3);
+    const barWidth = housingW + 4;
+    const barX = lightX - housingW - 2;
+    const barY = lightY - 8;
+    // Background
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+    ctx.fillRect(barX, barY, barWidth, 4);
+    // Progress
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+    ctx.fillRect(barX, barY, barWidth * progress, 4);
 }
 
 function drawCar(x, y) {
