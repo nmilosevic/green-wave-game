@@ -16,7 +16,7 @@ A collection of ideas for improving and expanding the game.
 
 ## Visual Polish
 
-- [ ] Better car design or animations
+- [x] Better car design (detailed sedan with matching colors in game and ending)
 - [ ] More interesting backgrounds/scenery (different city districts, time of day)
 - [ ] Speedometer gauge instead of just numbers
 - [x] Ending animation (sunset scene with car driving into the distance)
