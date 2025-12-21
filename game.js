@@ -335,6 +335,14 @@ document.addEventListener('keyup', (e) => {
     }
 });
 
+// Debug: Press 'E' to preview ending animation
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'e' || e.key === 'E') {
+        gameState = 'ending';
+        endingTime = 0;
+    }
+});
+
 // Message display
 function showMessage(title, text, buttonText, buttonAction) {
     messageTitle.textContent = title;
@@ -1116,205 +1124,273 @@ function drawEndingAnimation(time) {
         ctx.shadowBlur = 0;
     }
 
-    // Car from behind - sporty coupe matching in-game car
+    // Car from behind - realistic sporty coupe
     const carX = canvas.width / 2;
-    const carY = canvas.height - 80;
-    const W = 140;      // Car width (from behind)
-    const H = 55;       // Body height
-    const cabinW = W * 0.65;
-    const cabinH = 35;
+    const carY = canvas.height - 75;
+    const W = 150;      // Car width (from behind)
+    const H = 50;       // Body height
+    const cabinW = W * 0.62;
+    const cabinH = 38;
 
     // Colors - vibrant orange sports car (matching side view)
     const bodyMain = '#ff6b35';
     const bodyDark = '#cc4411';
-    const bodyLight = '#ff8855';
+    const bodyShine = '#ffaa77';
     const black = '#111';
-    const darkGray = '#333';
+    const darkGray = '#2a2a2a';
 
     // Wheel positions
-    const wheelX1 = carX - W/2 + 20;
-    const wheelX2 = carX + W/2 - 20;
-    const wheelYPos = carY + H - 10;
+    const wheelX1 = carX - W/2 + 18;
+    const wheelX2 = carX + W/2 - 18;
 
-    // === WHEEL WELLS ===
+    // === TIRES (draw first, behind body) ===
+    const tireWidth = 14;
+    const tireHeight = 8;
     ctx.fillStyle = black;
     ctx.beginPath();
-    ctx.ellipse(wheelX1, wheelYPos + 8, 20, 14, 0, Math.PI, 0);
+    ctx.ellipse(wheelX1, carY + H, tireWidth, tireHeight, 0, 0, Math.PI);
     ctx.fill();
     ctx.beginPath();
-    ctx.ellipse(wheelX2, wheelYPos + 8, 20, 14, 0, Math.PI, 0);
+    ctx.ellipse(wheelX2, carY + H, tireWidth, tireHeight, 0, 0, Math.PI);
     ctx.fill();
 
     // === MAIN BODY ===
     ctx.fillStyle = bodyMain;
     ctx.beginPath();
-    // Bottom left
-    ctx.moveTo(carX - W/2, carY + H);
-    // Left side - curves inward toward top
-    ctx.quadraticCurveTo(carX - W/2 - 3, carY + H/2, carX - W/2 + 5, carY);
-    // Left shoulder to cabin
-    ctx.lineTo(carX - cabinW/2, carY);
-    // Left C-pillar - angled
-    ctx.lineTo(carX - cabinW/2 + 8, carY - cabinH);
-    // Roof - gentle curve
-    ctx.quadraticCurveTo(carX, carY - cabinH - 3, carX + cabinW/2 - 8, carY - cabinH);
+    // Bottom left corner
+    ctx.moveTo(carX - W/2 + 5, carY + H);
+    // Left fender curve
+    ctx.quadraticCurveTo(carX - W/2 - 2, carY + H - 10, carX - W/2, carY + H/2);
+    // Left side up to shoulder
+    ctx.quadraticCurveTo(carX - W/2 + 2, carY + 5, carX - W/2 + 10, carY);
+    // Left shoulder to C-pillar
+    ctx.lineTo(carX - cabinW/2 - 5, carY);
+    // Left C-pillar - angled inward
+    ctx.lineTo(carX - cabinW/2 + 5, carY - cabinH + 5);
+    // Roof left curve
+    ctx.quadraticCurveTo(carX - cabinW/2 + 10, carY - cabinH, carX - 15, carY - cabinH);
+    // Roof center
+    ctx.quadraticCurveTo(carX, carY - cabinH - 2, carX + 15, carY - cabinH);
+    // Roof right curve
+    ctx.quadraticCurveTo(carX + cabinW/2 - 10, carY - cabinH, carX + cabinW/2 - 5, carY - cabinH + 5);
     // Right C-pillar
-    ctx.lineTo(carX + cabinW/2, carY);
+    ctx.lineTo(carX + cabinW/2 + 5, carY);
     // Right shoulder
-    ctx.lineTo(carX + W/2 - 5, carY);
+    ctx.lineTo(carX + W/2 - 10, carY);
     // Right side
-    ctx.quadraticCurveTo(carX + W/2 + 3, carY + H/2, carX + W/2, carY + H);
+    ctx.quadraticCurveTo(carX + W/2 - 2, carY + 5, carX + W/2, carY + H/2);
+    // Right fender curve
+    ctx.quadraticCurveTo(carX + W/2 + 2, carY + H - 10, carX + W/2 - 5, carY + H);
     ctx.closePath();
     ctx.fill();
 
-    // === LOWER BODY / REAR DIFFUSER AREA ===
+    // === BODY SHADING (lower section darker) ===
     ctx.fillStyle = bodyDark;
     ctx.beginPath();
-    ctx.moveTo(carX - W/2 + 2, carY + H - 15);
-    ctx.lineTo(carX + W/2 - 2, carY + H - 15);
-    ctx.lineTo(carX + W/2, carY + H);
-    ctx.lineTo(carX - W/2, carY + H);
+    ctx.moveTo(carX - W/2 + 5, carY + H);
+    ctx.quadraticCurveTo(carX - W/2 - 2, carY + H - 10, carX - W/2 + 3, carY + H/2 + 10);
+    ctx.lineTo(carX + W/2 - 3, carY + H/2 + 10);
+    ctx.quadraticCurveTo(carX + W/2 + 2, carY + H - 10, carX + W/2 - 5, carY + H);
     ctx.closePath();
     ctx.fill();
 
-    // === BODY HIGHLIGHT LINE ===
-    ctx.strokeStyle = bodyLight;
-    ctx.lineWidth = 2;
+    // === HIGHLIGHT LINE (shoulder crease) ===
+    ctx.strokeStyle = bodyShine;
+    ctx.lineWidth = 1.5;
     ctx.beginPath();
-    ctx.moveTo(carX - W/2 + 8, carY + 8);
-    ctx.lineTo(carX + W/2 - 8, carY + 8);
+    ctx.moveTo(carX - W/2 + 12, carY + 3);
+    ctx.lineTo(carX + W/2 - 12, carY + 3);
     ctx.stroke();
 
-    // === REAR WINDOW (with sunset reflection) ===
+    // === PEOPLE SILHOUETTES (clipped to window area) ===
+    // Save context and create clipping path from window shape
+    ctx.save();
+    ctx.beginPath();
+    ctx.moveTo(carX - cabinW/2 + 14, carY - 8);
+    ctx.quadraticCurveTo(carX - cabinW/2 + 8, carY - cabinH + 12, carX - cabinW/2 + 16, carY - cabinH + 8);
+    ctx.quadraticCurveTo(carX, carY - cabinH + 2, carX + cabinW/2 - 16, carY - cabinH + 8);
+    ctx.quadraticCurveTo(carX + cabinW/2 - 8, carY - cabinH + 12, carX + cabinW/2 - 14, carY - 8);
+    ctx.closePath();
+    ctx.clip();
+
+    const silhouetteColor = '#1a1a2e';
+    ctx.fillStyle = silhouetteColor;
+
+    // Dad (driver - left side when viewing from behind)
+    const dadX = carX - cabinW/4;
+    const dadHeadY = carY - cabinH + 22;
+
+    // Dad's head
+    ctx.beginPath();
+    ctx.ellipse(dadX, dadHeadY, 8, 9, 0, 0, Math.PI * 2);
+    ctx.fill();
+    // Neck and shoulders
+    ctx.beginPath();
+    ctx.moveTo(dadX - 14, dadHeadY + 25);
+    ctx.quadraticCurveTo(dadX - 10, dadHeadY + 10, dadX - 5, dadHeadY + 8);
+    ctx.lineTo(dadX + 5, dadHeadY + 8);
+    ctx.quadraticCurveTo(dadX + 10, dadHeadY + 10, dadX + 14, dadHeadY + 25);
+    ctx.closePath();
+    ctx.fill();
+
+    // Child (passenger - right side when viewing from behind)
+    const kidX = carX + cabinW/4;
+    const kidHeadY = carY - cabinH + 26;
+
+    // Child's head
+    ctx.beginPath();
+    ctx.arc(kidX, kidHeadY, 6, 0, Math.PI * 2);
+    ctx.fill();
+    // Shoulders
+    ctx.beginPath();
+    ctx.moveTo(kidX - 10, kidHeadY + 18);
+    ctx.quadraticCurveTo(kidX - 6, kidHeadY + 7, kidX - 3, kidHeadY + 5);
+    ctx.lineTo(kidX + 3, kidHeadY + 5);
+    ctx.quadraticCurveTo(kidX + 6, kidHeadY + 7, kidX + 10, kidHeadY + 18);
+    ctx.closePath();
+    ctx.fill();
+
+    // Restore context (removes clipping)
+    ctx.restore();
+
+    // === REAR WINDOW (drawn over silhouettes with transparency) ===
     const windowGradient = ctx.createLinearGradient(
-        carX - cabinW/2 + 15, carY - cabinH + 8,
-        carX + cabinW/2 - 15, carY - 5
+        carX, carY - cabinH + 8,
+        carX, carY - 8
     );
-    windowGradient.addColorStop(0, '#ff7744');
-    windowGradient.addColorStop(0.4, '#ffaa66');
-    windowGradient.addColorStop(0.8, '#ff8844');
-    windowGradient.addColorStop(1, '#ff5533');
+    // Semi-transparent sunset reflection so we can see silhouettes through
+    windowGradient.addColorStop(0, 'rgba(255, 136, 85, 0.7)');
+    windowGradient.addColorStop(0.3, 'rgba(255, 187, 119, 0.6)');
+    windowGradient.addColorStop(0.7, 'rgba(255, 153, 85, 0.6)');
+    windowGradient.addColorStop(1, 'rgba(255, 102, 51, 0.7)');
     ctx.fillStyle = windowGradient;
     ctx.beginPath();
-    ctx.moveTo(carX - cabinW/2 + 12, carY - 5);
-    ctx.quadraticCurveTo(carX - cabinW/2 + 10, carY - cabinH + 8, carX - cabinW/2 + 18, carY - cabinH + 5);
-    ctx.quadraticCurveTo(carX, carY - cabinH - 1, carX + cabinW/2 - 18, carY - cabinH + 5);
-    ctx.quadraticCurveTo(carX + cabinW/2 - 10, carY - cabinH + 8, carX + cabinW/2 - 12, carY - 5);
+    ctx.moveTo(carX - cabinW/2 + 14, carY - 8);
+    ctx.quadraticCurveTo(carX - cabinW/2 + 8, carY - cabinH + 12, carX - cabinW/2 + 16, carY - cabinH + 8);
+    ctx.quadraticCurveTo(carX, carY - cabinH + 2, carX + cabinW/2 - 16, carY - cabinH + 8);
+    ctx.quadraticCurveTo(carX + cabinW/2 - 8, carY - cabinH + 12, carX + cabinW/2 - 14, carY - 8);
     ctx.closePath();
     ctx.fill();
 
-    // Window frame
-    ctx.strokeStyle = bodyDark;
-    ctx.lineWidth = 2;
+    // Window frame (black rubber trim)
+    ctx.strokeStyle = '#222';
+    ctx.lineWidth = 3;
     ctx.stroke();
 
-    // === SILHOUETTES (dad and child) ===
-    ctx.fillStyle = '#1a1a2e';
-    // Dad (driver side - left from behind)
-    const dadX = carX - cabinW/4;
-    const dadY = carY - cabinH + 12;
+    // === TAIL LIGHTS ===
+    // Left tail light (wrap-around style)
+    ctx.fillStyle = '#dd2222';
     ctx.beginPath();
-    ctx.arc(dadX, dadY + 8, 10, 0, Math.PI * 2);
+    ctx.moveTo(carX - W/2 + 6, carY + 8);
+    ctx.lineTo(carX - W/2 + 28, carY + 8);
+    ctx.lineTo(carX - W/2 + 28, carY + 28);
+    ctx.lineTo(carX - W/2 + 6, carY + 28);
+    ctx.quadraticCurveTo(carX - W/2 + 2, carY + 18, carX - W/2 + 6, carY + 8);
+    ctx.closePath();
     ctx.fill();
-    ctx.beginPath();
-    ctx.ellipse(dadX, dadY + 22, 14, 8, 0, 0, Math.PI * 2);
-    ctx.fill();
-
-    // Child (passenger side - right from behind)
-    const kidX = carX + cabinW/4;
-    const kidY = carY - cabinH + 16;
-    ctx.beginPath();
-    ctx.arc(kidX, kidY + 6, 8, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.beginPath();
-    ctx.ellipse(kidX, kidY + 17, 10, 6, 0, 0, Math.PI * 2);
-    ctx.fill();
-
-    // === TAIL LIGHTS (modern LED style) ===
-    // Left tail light cluster
-    ctx.fillStyle = '#ff2222';
-    ctx.shadowColor = '#ff2222';
-    ctx.shadowBlur = 20;
-    ctx.beginPath();
-    ctx.roundRect(carX - W/2 + 8, carY + 12, 18, 8, 2);
-    ctx.fill();
-    ctx.beginPath();
-    ctx.roundRect(carX - W/2 + 8, carY + 24, 18, 8, 2);
+    // Glow
+    ctx.shadowColor = '#ff3333';
+    ctx.shadowBlur = 15;
     ctx.fill();
     ctx.shadowBlur = 0;
+    // Light segments
+    ctx.strokeStyle = '#aa1111';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(carX - W/2 + 10, carY + 12);
+    ctx.lineTo(carX - W/2 + 26, carY + 12);
+    ctx.moveTo(carX - W/2 + 10, carY + 18);
+    ctx.lineTo(carX - W/2 + 26, carY + 18);
+    ctx.moveTo(carX - W/2 + 10, carY + 24);
+    ctx.lineTo(carX - W/2 + 26, carY + 24);
+    ctx.stroke();
 
-    // Right tail light cluster
-    ctx.fillStyle = '#ff2222';
-    ctx.shadowColor = '#ff2222';
-    ctx.shadowBlur = 20;
+    // Right tail light (wrap-around style)
+    ctx.fillStyle = '#dd2222';
     ctx.beginPath();
-    ctx.roundRect(carX + W/2 - 26, carY + 12, 18, 8, 2);
+    ctx.moveTo(carX + W/2 - 6, carY + 8);
+    ctx.lineTo(carX + W/2 - 28, carY + 8);
+    ctx.lineTo(carX + W/2 - 28, carY + 28);
+    ctx.lineTo(carX + W/2 - 6, carY + 28);
+    ctx.quadraticCurveTo(carX + W/2 - 2, carY + 18, carX + W/2 - 6, carY + 8);
+    ctx.closePath();
     ctx.fill();
-    ctx.beginPath();
-    ctx.roundRect(carX + W/2 - 26, carY + 24, 18, 8, 2);
+    ctx.shadowColor = '#ff3333';
+    ctx.shadowBlur = 15;
     ctx.fill();
     ctx.shadowBlur = 0;
+    // Light segments
+    ctx.strokeStyle = '#aa1111';
+    ctx.beginPath();
+    ctx.moveTo(carX + W/2 - 10, carY + 12);
+    ctx.lineTo(carX + W/2 - 26, carY + 12);
+    ctx.moveTo(carX + W/2 - 10, carY + 18);
+    ctx.lineTo(carX + W/2 - 26, carY + 18);
+    ctx.moveTo(carX + W/2 - 10, carY + 24);
+    ctx.lineTo(carX + W/2 - 26, carY + 24);
+    ctx.stroke();
 
-    // Light bar connecting tail lights (modern design)
-    ctx.fillStyle = '#aa1111';
-    ctx.fillRect(carX - 30, carY + 16, 60, 3);
+    // Center light bar
+    ctx.fillStyle = '#991111';
+    ctx.fillRect(carX - 25, carY + 14, 50, 4);
+
+    // === TRUNK LID LINE ===
+    ctx.strokeStyle = bodyDark;
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(carX - cabinW/2 + 5, carY - 3);
+    ctx.lineTo(carX + cabinW/2 - 5, carY - 3);
+    ctx.stroke();
 
     // === REAR BUMPER ===
     ctx.fillStyle = darkGray;
     ctx.beginPath();
-    ctx.roundRect(carX - W/2 + 5, carY + H - 6, W - 10, 8, 2);
+    ctx.roundRect(carX - W/2 + 8, carY + H - 8, W - 16, 10, 3);
     ctx.fill();
 
-    // Exhaust tips
-    ctx.fillStyle = '#555';
+    // Bumper detail/diffuser
+    ctx.fillStyle = '#1a1a1a';
+    ctx.fillRect(carX - 35, carY + H - 6, 70, 4);
+
+    // === EXHAUST TIPS ===
+    ctx.fillStyle = '#444';
     ctx.beginPath();
-    ctx.ellipse(carX - 20, carY + H, 6, 3, 0, 0, Math.PI * 2);
+    ctx.ellipse(carX - 22, carY + H + 1, 7, 4, 0, 0, Math.PI);
     ctx.fill();
     ctx.beginPath();
-    ctx.ellipse(carX + 20, carY + H, 6, 3, 0, 0, Math.PI * 2);
+    ctx.ellipse(carX + 22, carY + H + 1, 7, 4, 0, 0, Math.PI);
     ctx.fill();
-    ctx.fillStyle = '#222';
+    // Inner dark
+    ctx.fillStyle = '#111';
     ctx.beginPath();
-    ctx.ellipse(carX - 20, carY + H, 4, 2, 0, 0, Math.PI * 2);
+    ctx.ellipse(carX - 22, carY + H + 1, 5, 2.5, 0, 0, Math.PI);
     ctx.fill();
     ctx.beginPath();
-    ctx.ellipse(carX + 20, carY + H, 4, 2, 0, 0, Math.PI * 2);
+    ctx.ellipse(carX + 22, carY + H + 1, 5, 2.5, 0, 0, Math.PI);
     ctx.fill();
 
     // === LICENSE PLATE ===
-    ctx.fillStyle = '#f5f5f5';
+    ctx.fillStyle = '#f8f8f8';
     ctx.beginPath();
-    ctx.roundRect(carX - 22, carY + H - 22, 44, 12, 2);
+    ctx.roundRect(carX - 20, carY + H - 20, 40, 11, 2);
     ctx.fill();
     ctx.strokeStyle = '#333';
     ctx.lineWidth = 1;
     ctx.stroke();
+    // Plate text hint
+    ctx.fillStyle = '#333';
+    ctx.font = '6px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('GRN WV', carX, carY + H - 12);
 
-    // === TIRES (from behind) ===
-    ctx.fillStyle = black;
-    ctx.beginPath();
-    ctx.ellipse(wheelX1, wheelYPos, 10, 18, 0, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.beginPath();
-    ctx.ellipse(wheelX2, wheelYPos, 10, 18, 0, 0, Math.PI * 2);
-    ctx.fill();
-
-    // === ALLOY RIMS ===
+    // === BRAND BADGE (center) ===
     ctx.fillStyle = '#888';
     ctx.beginPath();
-    ctx.ellipse(wheelX1, wheelYPos, 5, 10, 0, 0, Math.PI * 2);
+    ctx.arc(carX, carY + 32, 5, 0, Math.PI * 2);
     ctx.fill();
+    ctx.fillStyle = '#666';
     ctx.beginPath();
-    ctx.ellipse(wheelX2, wheelYPos, 5, 10, 0, 0, Math.PI * 2);
-    ctx.fill();
-
-    // Rim detail
-    ctx.fillStyle = '#aaa';
-    ctx.beginPath();
-    ctx.ellipse(wheelX1, wheelYPos, 3, 6, 0, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.beginPath();
-    ctx.ellipse(wheelX2, wheelYPos, 3, 6, 0, 0, Math.PI * 2);
+    ctx.arc(carX, carY + 32, 3, 0, Math.PI * 2);
     ctx.fill();
 
     // Fade in text after a moment
