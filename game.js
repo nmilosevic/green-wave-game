@@ -1067,59 +1067,124 @@ function drawEndingAnimation(time) {
     const horizonY = canvas.height * 0.55;
     const vanishingX = canvas.width / 2;
 
-    // Road surface
+    // === ROAD SURFACE ===
+    // Main road with perspective
+    const roadLeftBottom = vanishingX - 180;
+    const roadRightBottom = vanishingX + 180;
+
     ctx.fillStyle = '#2a2a2a';
     ctx.beginPath();
     ctx.moveTo(vanishingX, horizonY);
-    ctx.lineTo(0, canvas.height);
-    ctx.lineTo(canvas.width, canvas.height);
+    ctx.lineTo(roadLeftBottom, canvas.height);
+    ctx.lineTo(roadRightBottom, canvas.height);
     ctx.closePath();
     ctx.fill();
 
-    // Road markings - dashed center line receding into distance
-    ctx.strokeStyle = '#ffcc00';
-    ctx.lineWidth = 2;
-    const numDashes = 15;
-    for (let i = 0; i < numDashes; i++) {
-        const t = i / numDashes;
-        const perspectiveT = Math.pow(t, 1.5); // Non-linear for perspective
-        const y1 = horizonY + (canvas.height - horizonY) * perspectiveT;
-        const y2 = horizonY + (canvas.height - horizonY) * Math.pow((i + 0.4) / numDashes, 1.5);
-        const dashWidth = 2 + (1 - perspectiveT) * 6;
+    // Road edge lines (white)
+    ctx.strokeStyle = '#666';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(vanishingX, horizonY);
+    ctx.lineTo(roadLeftBottom + 15, canvas.height);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(vanishingX, horizonY);
+    ctx.lineTo(roadRightBottom - 15, canvas.height);
+    ctx.stroke();
 
-        ctx.lineWidth = dashWidth;
-        ctx.beginPath();
-        ctx.moveTo(vanishingX, y1);
-        ctx.lineTo(vanishingX, Math.min(y2, canvas.height));
-        ctx.stroke();
+    // Center dashed line (yellow)
+    ctx.strokeStyle = '#cc9900';
+    ctx.setLineDash([20, 15]);
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.moveTo(vanishingX, horizonY);
+    ctx.lineTo(vanishingX, canvas.height);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // === ANIMATED TRAFFIC LIGHTS (zooming past the car) ===
+    // Traffic lights move from horizon toward and past the viewer
+    // Lights turn green as the car approaches them
+    const numLights = 2;
+    const lightCycleTime = 5.0;
+
+    for (let i = 0; i < numLights; i++) {
+        const lightTime = (time + i * lightCycleTime / numLights) % lightCycleTime;
+        const t = lightTime / lightCycleTime;
+
+        if (t > 1) continue;
+
+        const perspectiveT = Math.pow(t, 2);
+
+        // Y position of the light housing (lower value = taller poles)
+        const lightY = horizonY + (canvas.height - horizonY) * perspectiveT * 0.5;
+
+        const scale = 0.15 + perspectiveT * 2.0;
+        const xSpread = 180 * perspectiveT;
+
+        let lightState = 'red';
+        if (t > 0.6) {
+            lightState = 'green';
+        } else if (t > 0.5) {
+            lightState = 'yellow';
+        }
+
+        drawEndingTrafficLight(ctx, vanishingX - xSpread - 40 * scale, lightY, scale, -1, lightState);
+        drawEndingTrafficLight(ctx, vanishingX + xSpread + 40 * scale, lightY, scale, 1, lightState);
     }
 
-    // Traffic lights in the distance - all green, getting smaller toward horizon
-    const lightPositions = [0.15, 0.25, 0.38, 0.52, 0.68];
-    for (const pos of lightPositions) {
-        const perspectiveT = Math.pow(pos, 1.3);
-        const y = horizonY + (canvas.height - horizonY) * perspectiveT;
-        const scale = 0.2 + (1 - pos) * 0.5;
+    function drawEndingTrafficLight(ctx, x, lightY, scale, side, lightState) {
+        const poleW = 4 * scale;
+        // Calculate where pole base meets the ground based on X position
+        // Road edges go from (vanishingX, horizonY) to (roadLeftBottom or roadRightBottom, canvas.height)
+        // Find Y at this X position along the road edge line
+        const roadEdgeX = side === -1 ? roadLeftBottom : roadRightBottom;
+        const t = Math.abs(x - vanishingX) / Math.abs(roadEdgeX - vanishingX);
+        const poleBaseY = horizonY + t * (canvas.height - horizonY);
 
-        // Slightly offset from center (alternating sides)
-        const sideOffset = (lightPositions.indexOf(pos) % 2 === 0 ? 1 : -1) * (80 * scale);
-        const x = vanishingX + sideOffset * (1 - perspectiveT * 0.5);
+        const poleTop = lightY;
+        const poleBottom = Math.min(poleBaseY, canvas.height);
 
-        // Pole
         ctx.fillStyle = '#333';
-        ctx.fillRect(x - 2 * scale, y - 50 * scale, 4 * scale, 50 * scale);
+        ctx.fillRect(x - poleW/2, poleTop, poleW, poleBottom - poleTop);
 
-        // Light housing
+        // Horizontal arm at top
+        const armLength = 30 * scale * (-side);
+        ctx.fillRect(x - poleW/2, poleTop, armLength, 3 * scale);
+
+        // Housing
+        const housingX = x + armLength - 6 * scale * (-side);
+        const housingW = 12 * scale;
+        const housingH = 30 * scale;
         ctx.fillStyle = '#222';
-        ctx.fillRect(x - 8 * scale, y - 60 * scale, 16 * scale, 25 * scale);
+        ctx.fillRect(housingX - housingW/2, poleTop + 3 * scale, housingW, housingH);
 
-        // Green light - glowing
+        // Lights
+        const lightR = 3 * scale;
+        const lightSpacing = 9 * scale;
+        const lightStartY = poleTop + 3 * scale + 6 * scale;
+
+        // Red
+        ctx.fillStyle = lightState === 'red' ? '#ff0000' : '#330000';
+        if (lightState === 'red') { ctx.shadowColor = '#ff0000'; ctx.shadowBlur = 10 * scale; }
         ctx.beginPath();
-        ctx.arc(x, y - 47 * scale, 5 * scale, 0, Math.PI * 2);
-        ctx.fillStyle = '#44ff44';
+        ctx.arc(housingX, lightStartY, lightR, 0, Math.PI * 2);
         ctx.fill();
-        ctx.shadowColor = '#44ff44';
-        ctx.shadowBlur = 15 * scale;
+        ctx.shadowBlur = 0;
+
+        // Yellow
+        ctx.fillStyle = lightState === 'yellow' ? '#ffcc00' : '#332200';
+        if (lightState === 'yellow') { ctx.shadowColor = '#ffcc00'; ctx.shadowBlur = 10 * scale; }
+        ctx.beginPath();
+        ctx.arc(housingX, lightStartY + lightSpacing, lightR, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.shadowBlur = 0;
+
+        // Green
+        ctx.fillStyle = lightState === 'green' ? '#00ff00' : '#003300';
+        if (lightState === 'green') { ctx.shadowColor = '#00ff00'; ctx.shadowBlur = 10 * scale; }
+        ctx.beginPath();
+        ctx.arc(housingX, lightStartY + lightSpacing * 2, lightR, 0, Math.PI * 2);
         ctx.fill();
         ctx.shadowBlur = 0;
     }
@@ -1411,25 +1476,16 @@ function drawEndingAnimation(time) {
     }
 
     // Final message and button prompt
-    if (time > 9) {
-        const textAlpha = Math.min((time - 9) / 2, 1);
-        ctx.fillStyle = `rgba(255, 200, 100, ${textAlpha})`;
-        ctx.font = 'bold 18px sans-serif';
-        ctx.textAlign = 'center';
-        ctx.fillText('Thanks for playing', canvas.width / 2, canvas.height - 30);
-
-        // Show the play again message
-        if (time > 10) {
-            showMessage(
-                'The Green Wave',
-                'For the drives we remember.',
-                'Play Again',
-                () => {
-                    gameState = 'playing';
-                    initLevel(1);
-                }
-            );
-        }
+    if (time > 10) {
+        showMessage(
+            'The Green Wave',
+            'For the drives we remember.',
+            'Play Again',
+            () => {
+                gameState = 'playing';
+                initLevel(1);
+            }
+        );
     }
 
     ctx.textAlign = 'left'; // Reset
