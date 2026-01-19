@@ -390,9 +390,9 @@ function winLevel() {
         return;
     } else {
         showMessage(
-            'Level Complete!',
+            'Level complete!',
             `"${levels[currentLevel - 1].name}"\n${starDisplay}\n${timeText}`,
-            'Next Level',
+            'Next level',
             () => initLevel(currentLevel + 1)
         );
     }
@@ -401,9 +401,9 @@ function winLevel() {
 function loseGame(reason) {
     gameState = 'lost';
     showMessage(
-        'Wave Broken!',
+        'Wave broken!',
         reason,
-        'Try Again',
+        'Try again',
         () => initLevel(currentLevel)
     );
 }
@@ -512,6 +512,10 @@ function draw() {
 
     // Draw distant buildings (parallax)
     drawBuildings(cameraX * 0.3);
+
+    // Draw grass below road
+    ctx.fillStyle = '#3a8f2a';
+    ctx.fillRect(0, ROAD_Y + ROAD_HEIGHT, canvas.width, canvas.height - ROAD_Y - ROAD_HEIGHT);
 
     // Draw road
     ctx.fillStyle = '#555555';
@@ -1478,9 +1482,9 @@ function drawEndingAnimation(time) {
     // Final message and button prompt
     if (time > 10) {
         showMessage(
-            'The Green Wave',
+            'The green wave',
             'For the drives we remember.',
-            'Play Again',
+            'Play again',
             () => {
                 gameState = 'playing';
                 initLevel(1);
