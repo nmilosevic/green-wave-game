@@ -66,4 +66,9 @@ green-wave-game/
 
 ## License
 
-Feel free to use, modify, and share.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## Credits
+
+- **Game design & development** - Original concept and implementation
+- **Mobile adaptations** - Responsive design, touch controls, landscape optimization, and UI refinement with assistance from Claude Haiku
