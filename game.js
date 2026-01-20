@@ -10,17 +10,13 @@ function resizeCanvas() {
     const displayWidth = wrapper.clientWidth;
     const displayHeight = wrapper.clientHeight;
     
-    // Set canvas display size
+    // Always maintain internal resolution of 1000x400
+    canvas.width = 1000;
+    canvas.height = 400;
+    
+    // Let CSS scale the display
     canvas.style.width = displayWidth + 'px';
     canvas.style.height = displayHeight + 'px';
-    
-    // Set canvas resolution (maintain 1000x400 internal resolution)
-    const dpr = window.devicePixelRatio || 1;
-    canvas.width = 1000 * dpr;
-    canvas.height = 400 * dpr;
-    
-    // Scale context to match device pixel ratio
-    ctx.scale(dpr, dpr);
 }
 
 // Initialize canvas size on load
@@ -465,11 +461,11 @@ function winLevel() {
     const stars = calculateStars(totalSpeedChange, level.finishX);
     const starDisplay = getStarDisplay(stars);
 
-    let timeText = `Time: ${formatTime(finishTime)}s`;
+    let timeText = `Time: ${formatTime(finishTime)} s`;
     if (isNewRecord) {
         timeText += ' - New record!';
     } else if (bestTime) {
-        timeText += ` (Best: ${formatTime(bestTime)}s)`;
+        timeText += ` (Best: ${formatTime(bestTime)} s)`;
     }
 
     if (currentLevel >= levels.length) {
@@ -1618,5 +1614,25 @@ function gameLoop(timestamp) {
 }
 
 // Start the game
-initLevel(1);
-requestAnimationFrame(gameLoop);
+let gameStarted = false;
+
+const startScreen = document.getElementById('startScreen');
+const startButton = document.getElementById('startButton');
+
+// Check if we should skip to ending animation for testing
+const urlParams = new URLSearchParams(window.location.search);
+const skipToEnding = urlParams.has('ending');
+
+startButton.addEventListener('click', () => {
+    gameStarted = true;
+    startScreen.classList.add('hidden');
+    
+    if (skipToEnding) {
+        gameState = 'ending';
+        endingTime = 0;
+    } else {
+        initLevel(1);
+    }
+    
+    requestAnimationFrame(gameLoop);
+});
