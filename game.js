@@ -4,6 +4,32 @@
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 
+// Canvas scaling for responsive design
+function resizeCanvas() {
+    const wrapper = document.getElementById('canvasWrapper');
+    const displayWidth = wrapper.clientWidth;
+    const displayHeight = wrapper.clientHeight;
+    
+    // Always maintain internal resolution of 1000x400
+    canvas.width = 1000;
+    canvas.height = 400;
+    
+    // Let CSS scale the display
+    canvas.style.width = displayWidth + 'px';
+    canvas.style.height = displayHeight + 'px';
+}
+
+// Initialize canvas size on load
+resizeCanvas();
+
+// Resize canvas on window resize
+window.addEventListener('resize', resizeCanvas);
+
+// Handle orientation change on mobile
+window.addEventListener('orientationchange', () => {
+    setTimeout(resizeCanvas, 100);
+});
+
 // Polyfill for roundRect (Safari < 16, older browsers)
 if (!ctx.roundRect) {
     CanvasRenderingContext2D.prototype.roundRect = function(x, y, w, h, radii) {
@@ -132,7 +158,7 @@ const ENDING_DURATION = 12; // seconds for full animation
 const levels = [
     {
         // Tutorial: Just one light with long green, teaches basic controls
-        name: "First Light",
+        name: "First light",
         startSpeed: 40,
         lights: [
             { x: 600, greenDuration: 4, redDuration: 2, offset: 0 },
@@ -141,7 +167,7 @@ const levels = [
     },
     {
         // Two lights, introduces timing between lights
-        name: "Easy Start",
+        name: "Easy start",
         startSpeed: 40,
         lights: [
             { x: 500, greenDuration: 3.5, redDuration: 2, offset: 0 },
@@ -151,7 +177,7 @@ const levels = [
     },
     {
         // Three lights, first real challenge
-        name: "Finding the Rhythm",
+        name: "Finding the rhythm",
         startSpeed: 45,
         lights: [
             { x: 500, greenDuration: 3, redDuration: 2, offset: 0 },
@@ -162,7 +188,7 @@ const levels = [
     },
     {
         // Four lights with tighter timing
-        name: "Keep the Pace",
+        name: "Keep the pace",
         startSpeed: 50,
         lights: [
             { x: 400, greenDuration: 2.5, redDuration: 2.5, offset: 0 },
@@ -174,7 +200,7 @@ const levels = [
     },
     {
         // Mixed timing requires speed adjustment
-        name: "Speed Adjustment",
+        name: "Speed adjustment",
         startSpeed: 60,
         lights: [
             { x: 400, greenDuration: 2, redDuration: 3, offset: 0 },
@@ -187,7 +213,7 @@ const levels = [
     },
     {
         // Long level with many lights
-        name: "The Long Road",
+        name: "The long road",
         startSpeed: 55,
         lights: [
             { x: 350, greenDuration: 2, redDuration: 2, offset: 0 },
@@ -202,7 +228,7 @@ const levels = [
     },
     {
         // Short greens, requires patience and precise timing
-        name: "Patience Required",
+        name: "Patience required",
         startSpeed: 70,
         lights: [
             { x: 400, greenDuration: 1.5, redDuration: 3, offset: 0 },
@@ -311,7 +337,13 @@ function getCurrentPhaseDuration(light, time) {
     }
 }
 
-// Input handling
+// Detect device type
+const isMobileDevice = () => {
+    return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
+        || window.matchMedia('(max-width: 768px)').matches;
+};
+
+// Input handling - Keyboard
 document.addEventListener('keydown', (e) => {
     if (e.key === 'w' || e.key === 'W' || e.key === 'ArrowUp') {
         keys.gas = true;
@@ -341,6 +373,60 @@ document.addEventListener('keydown', (e) => {
         gameState = 'ending';
         endingTime = 0;
     }
+});
+
+// Mobile touch controls
+const gasButton = document.getElementById('gasButton');
+const brakeButton = document.getElementById('brakeButton');
+const restartButton = document.getElementById('restartButton');
+
+// Prevent double-tap zoom on mobile buttons
+gasButton.addEventListener('touchstart', (e) => {
+    e.preventDefault();
+    keys.gas = true;
+}, { passive: false });
+
+gasButton.addEventListener('touchend', (e) => {
+    e.preventDefault();
+    keys.gas = false;
+}, { passive: false });
+
+gasButton.addEventListener('mousedown', () => {
+    keys.gas = true;
+});
+
+gasButton.addEventListener('mouseup', () => {
+    keys.gas = false;
+});
+
+gasButton.addEventListener('mouseleave', () => {
+    keys.gas = false;
+});
+
+brakeButton.addEventListener('touchstart', (e) => {
+    e.preventDefault();
+    keys.brake = true;
+}, { passive: false });
+
+brakeButton.addEventListener('touchend', (e) => {
+    e.preventDefault();
+    keys.brake = false;
+}, { passive: false });
+
+brakeButton.addEventListener('mousedown', () => {
+    keys.brake = true;
+});
+
+brakeButton.addEventListener('mouseup', () => {
+    keys.brake = false;
+});
+
+brakeButton.addEventListener('mouseleave', () => {
+    keys.brake = false;
+});
+
+restartButton.addEventListener('click', () => {
+    initLevel(currentLevel);
 });
 
 // Message display
@@ -375,11 +461,11 @@ function winLevel() {
     const stars = calculateStars(totalSpeedChange, level.finishX);
     const starDisplay = getStarDisplay(stars);
 
-    let timeText = `Time: ${formatTime(finishTime)}s`;
+    let timeText = `Time: ${formatTime(finishTime)} s`;
     if (isNewRecord) {
-        timeText += ' - New Record!';
+        timeText += ' - New record!';
     } else if (bestTime) {
-        timeText += ` (Best: ${formatTime(bestTime)}s)`;
+        timeText += ` (Best: ${formatTime(bestTime)} s)`;
     }
 
     if (currentLevel >= levels.length) {
@@ -1528,5 +1614,25 @@ function gameLoop(timestamp) {
 }
 
 // Start the game
-initLevel(1);
-requestAnimationFrame(gameLoop);
+let gameStarted = false;
+
+const startScreen = document.getElementById('startScreen');
+const startButton = document.getElementById('startButton');
+
+// Check if we should skip to ending animation for testing
+const urlParams = new URLSearchParams(window.location.search);
+const skipToEnding = urlParams.has('ending');
+
+startButton.addEventListener('click', () => {
+    gameStarted = true;
+    startScreen.classList.add('hidden');
+    
+    if (skipToEnding) {
+        gameState = 'ending';
+        endingTime = 0;
+    } else {
+        initLevel(1);
+    }
+    
+    requestAnimationFrame(gameLoop);
+});

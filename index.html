@@ -2,7 +2,9 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>Green Wave</title>
     <style>
         * {
@@ -18,7 +20,7 @@
             align-items: center;
             min-height: 100vh;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            overflow: hidden;
+            overflow-x: hidden;
         }
 
         #gameContainer {
@@ -26,6 +28,9 @@
             flex-direction: column;
             align-items: center;
             gap: 15px;
+            padding: 15px;
+            width: 100%;
+            max-width: 1200px;
         }
 
         #hud {
@@ -33,6 +38,9 @@
             gap: 30px;
             color: #fff;
             font-size: 18px;
+            flex-wrap: wrap;
+            justify-content: center;
+            width: 100%;
         }
 
         .hud-item {
@@ -46,16 +54,31 @@
             font-weight: bold;
         }
 
+        #canvasWrapper {
+            width: 100%;
+            max-width: 1000px;
+            aspect-ratio: 2.5;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 300px;
+        }
+
         #gameCanvas {
             border: 3px solid #4ecca3;
             border-radius: 8px;
             background: #16213e;
+            width: 100%;
+            height: 100%;
+            max-width: 1000px;
+            max-height: 400px;
         }
 
         #controls {
             color: #888;
             font-size: 14px;
             text-align: center;
+            display: block;
         }
 
         #controls kbd {
@@ -66,8 +89,123 @@
             margin: 0 3px;
         }
 
+        /* Mobile controls */
+        #mobileControls {
+            display: none;
+            width: 100%;
+            gap: 20px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .control-button {
+            background: #4ecca3;
+            color: #1a1a2e;
+            border: none;
+            padding: 15px 25px;
+            font-size: 16px;
+            font-weight: bold;
+            border-radius: 8px;
+            cursor: pointer;
+            touch-action: manipulation;
+            user-select: none;
+            -webkit-user-select: none;
+            transition: transform 0.1s, background 0.1s;
+            min-width: 100px;
+            min-height: 48px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .control-button:active {
+            transform: scale(0.95);
+            background: #3ab386;
+        }
+
+        .control-button.brake {
+            background: #e74c3c;
+        }
+
+        .control-button.brake:active {
+            background: #c0392b;
+        }
+
+        .control-button.restart {
+            background: #3498db;
+            min-width: 120px;
+        }
+
+        .control-button.restart:active {
+            background: #2980b9;
+        }
+
+        /* Responsive design */
+        @media (max-width: 768px) {
+            #gameContainer {
+                gap: 15px;
+                padding: 15px;
+            }
+
+            #hud {
+                gap: 15px;
+                font-size: 14px;
+            }
+
+            .hud-item {
+                padding: 8px 15px;
+            }
+
+            #canvasWrapper {
+                min-height: 240px;
+            }
+
+            #controls {
+                display: none;
+            }
+
+            #mobileControls {
+                display: flex;
+            }
+
+            .control-button {
+                padding: 12px 20px;
+                font-size: 14px;
+                min-width: 90px;
+                min-height: 48px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            #gameContainer {
+                gap: 15px;
+                padding: 15px;
+            }
+
+            #hud {
+                gap: 10px;
+                font-size: 12px;
+            }
+
+            .hud-item {
+                padding: 6px 12px;
+            }
+
+            .control-button {
+                padding: 12px 16px;
+                font-size: 13px;
+                min-width: 80px;
+                min-height: 48px;
+                flex: 1 1 calc(50% - 8px);
+            }
+
+            .control-button.restart {
+                flex: 1 1 100%;
+            }
+        }
+
         #message {
-            position: absolute;
+            position: fixed;
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
@@ -109,9 +247,191 @@
 
         .success h2 { color: #4ecca3; }
         .failure h2 { color: #e74c3c; }
+
+        #startScreen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 200;
+        }
+
+        #startScreen.hidden {
+            display: none;
+        }
+
+        #startContent {
+            text-align: center;
+            color: #fff;
+            max-width: 600px;
+            padding: 40px 20px;
+        }
+
+        #startContent h1 {
+            font-size: 48px;
+            margin-bottom: 20px;
+            color: #4ecca3;
+        }
+
+        #startContent p {
+            font-size: 18px;
+            line-height: 1.6;
+            margin-bottom: 30px;
+            color: #ccc;
+        }
+
+        #startButton {
+            background: #4ecca3;
+            color: #1a1a2e;
+            border: none;
+            padding: 15px 50px;
+            font-size: 18px;
+            font-weight: bold;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: transform 0.2s, background 0.2s;
+        }
+
+        #startButton:hover {
+            transform: scale(1.05);
+            background: #3ab386;
+        }
+
+        #startButton:active {
+            transform: scale(0.95);
+        }
+
+        #landscapeHint {
+            font-size: 14px;
+            color: #888;
+            margin-top: 30px;
+            text-align: center;
+            display: none;
+        }
+
+        @media (max-width: 768px) {
+            #landscapeHint {
+                display: block;
+            }
+        }
+
+        @media (orientation: landscape) and (max-height: 600px) {
+            body {
+                min-height: 100vh;
+            }
+
+            #gameContainer {
+                flex-direction: row;
+                gap: 15px;
+                padding: 15px;
+                align-items: center;
+                max-width: 100%;
+                height: 100vh;
+            }
+
+            #hud {
+                flex-direction: column;
+                gap: 10px;
+                font-size: 16px;
+                order: -1;
+                padding: 15px;
+            }
+
+            .hud-item {
+                padding: 10px 12px;
+                font-size: 14px;
+            }
+
+            #canvasWrapper {
+                flex: 1;
+                min-height: auto;
+                margin: 0;
+                align-self: stretch;
+            }
+
+            #controls {
+                display: none;
+            }
+
+            #mobileControls {
+                display: flex;
+                flex-direction: column;
+                gap: 15px;
+                order: 1;
+                width: 90px;
+                margin: 0;
+                padding: 15px;
+            }
+
+            .control-button {
+                padding: 10px 12px;
+                font-size: 12px;
+                min-width: unset;
+                flex: 1 1 auto;
+            }
+
+            .control-button.restart {
+                min-width: unset;
+                flex: 1 1 auto;
+            }
+        }
+
+        @media (orientation: landscape) and (max-height: 500px) {
+            #gameContainer {
+                padding: 10px;
+                gap: 10px;
+            }
+
+            #hud {
+                gap: 10px;
+            }
+
+            .hud-item {
+                padding: 6px 10px;
+                font-size: 12px;
+            }
+
+            .control-button {
+                padding: 8px 10px;
+                font-size: 11px;
+            }
+
+            #startContent {
+                padding: 30px 20px;
+            }
+
+            #startContent h1 {
+                font-size: 40px;
+                margin-bottom: 15px;
+            }
+
+            #startContent p {
+                font-size: 15px;
+                margin-bottom: 20px;
+            }
+
+            #startButton {
+                padding: 12px 40px;
+                font-size: 16px;
+            }
+        }
     </style>
 </head>
 <body>
+    <div id="startScreen">
+        <div id="startContent">
+            <h1>Green Wave</h1>
+            <p>Time your speed through the city's traffic lights. Drive smoothly and catch the perfect rhythm of the green wave.</p>
+            <button id="startButton">Start game</button>
+            <div id="landscapeHint">💡 For best experience on mobile, rotate to landscape mode</div>
+        </div>
+    </div>
+
     <div id="gameContainer">
         <section id="hud" aria-label="Game statistics">
             <div class="hud-item">Level: <span id="levelDisplay" aria-live="polite">1</span></div>
@@ -119,18 +439,25 @@
             <div class="hud-item">Lights passed: <span id="lightsDisplay" aria-live="polite">0</span>/<span id="totalLightsDisplay" aria-live="polite">0</span></div>
             <div class="hud-item">Time: <span id="timeDisplay" aria-live="off">0.0</span> s</div>
         </section>
-        <canvas id="gameCanvas" width="1000" height="400" aria-label="Green Wave game canvas - use W or Arrow Up to accelerate, S or Arrow Down to brake" role="img"></canvas>
+        <div id="canvasWrapper">
+            <canvas id="gameCanvas" width="1000" height="400" aria-label="Green Wave game canvas - use W or Arrow Up to accelerate, S or Arrow Down to brake" role="img"></canvas>
+        </div>
         <div id="controls">
             <kbd>W</kbd> or <kbd>↑</kbd> Gas &nbsp;&nbsp;|&nbsp;&nbsp;
             <kbd>S</kbd> or <kbd>↓</kbd> Brake &nbsp;&nbsp;|&nbsp;&nbsp;
             <kbd>R</kbd> Restart level
         </div>
+        <div id="mobileControls">
+            <button class="control-button gas" id="gasButton">Gas</button>
+            <button class="control-button brake" id="brakeButton">Brake</button>
+            <button class="control-button restart" id="restartButton">Restart (R)</button>
+        </div>
     </div>
 
     <div id="message" role="alertdialog" aria-labelledby="messageTitle" aria-describedby="messageText">
-        <h2 id="messageTitle">Level Complete!</h2>
+        <h2 id="messageTitle">Level complete!</h2>
         <p id="messageText">You caught the green wave!</p>
-        <button id="messageButton">Next Level</button>
+        <button id="messageButton">Next level</button>
     </div>
 
     <script src="game.js"></script>
