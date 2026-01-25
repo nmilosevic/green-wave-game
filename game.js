@@ -394,6 +394,10 @@ function initLevel(levelNum) {
     gameState = 'playing';
     gameTime = 0;
 
+    // Clear key states to prevent car from accelerating immediately on restart
+    keys.gas = false;
+    keys.brake = false;
+
     // Reset smoothness tracking
     totalSpeedChange = 0;
     lastSpeed = level.startSpeed;
