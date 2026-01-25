@@ -88,6 +88,96 @@ function formatTime(seconds) {
     return seconds.toFixed(1);
 }
 
+// Username storage and management
+const USERNAME_KEY = 'greenWaveUsername';
+
+function getStoredUsername() {
+    try {
+        return localStorage.getItem(USERNAME_KEY) || null;
+    } catch (e) {
+        return null;
+    }
+}
+
+function saveUsername(username) {
+    try {
+        localStorage.setItem(USERNAME_KEY, username);
+        return true;
+    } catch (e) {
+        console.warn('Failed to save username:', e);
+        return false;
+    }
+}
+
+function validateUsername(username) {
+    const trimmed = username.trim();
+    if (trimmed.length < 3) {
+        return { valid: false, error: 'Username must be at least 3 characters' };
+    }
+    if (trimmed.length > 20) {
+        return { valid: false, error: 'Username must be 20 characters or less' };
+    }
+    // Allow alphanumeric, spaces, underscores, hyphens
+    if (!/^[a-zA-Z0-9 _-]+$/.test(trimmed)) {
+        return { valid: false, error: 'Username can only contain letters, numbers, spaces, _, and -' };
+    }
+    return { valid: true, username: trimmed };
+}
+
+// Firebase leaderboard functions
+async function submitFullGameToLeaderboard(username, totalTime, avgStars, levelData) {
+    if (!firebaseAvailable || !db) {
+        console.warn('Firebase not available');
+        return false;
+    }
+
+    try {
+        const leaderboardRef = db.ref('green-wave-leaderboards/full-game');
+
+        await leaderboardRef.push({
+            username: username,
+            totalTime: parseFloat(totalTime.toFixed(1)),
+            averageStars: avgStars,
+            levels: levelData,
+            timestamp: Date.now()
+        });
+
+        return true;
+    } catch (error) {
+        console.error('Failed to submit to leaderboard:', error);
+        return false;
+    }
+}
+
+async function fetchLeaderboard() {
+    if (!firebaseAvailable || !db) {
+        return [];
+    }
+
+    try {
+        const leaderboardRef = db.ref('green-wave-leaderboards/full-game');
+
+        // Query top 10 by total time (ascending)
+        const snapshot = await leaderboardRef
+            .orderByChild('totalTime')
+            .limitToFirst(10)
+            .once('value');
+
+        const entries = [];
+        snapshot.forEach((childSnapshot) => {
+            entries.push({
+                id: childSnapshot.key,
+                ...childSnapshot.val()
+            });
+        });
+
+        return entries;
+    } catch (error) {
+        console.error('Failed to fetch leaderboard:', error);
+        return [];
+    }
+}
+
 // Calculate star rating based on driving smoothness
 // Lower totalSpeedChange = smoother driving = more stars
 function calculateStars(speedChange, levelDistance) {
@@ -148,6 +238,53 @@ let keys = { gas: false, brake: false };
 // Smoothness tracking for star rating
 let totalSpeedChange = 0; // Accumulated absolute speed changes
 let lastSpeed = 0; // Previous frame's speed for comparison
+
+// Full game session tracking
+let gameSession = {
+    active: false,
+    startTime: null,
+    levels: [] // Array of {level, time, stars, smoothness}
+};
+
+function startGameSession() {
+    gameSession = {
+        active: true,
+        startTime: Date.now(),
+        levels: []
+    };
+}
+
+function addLevelToSession(level, time, stars, smoothness) {
+    if (gameSession.active) {
+        gameSession.levels.push({
+            level: level,
+            time: parseFloat(time.toFixed(1)),
+            stars: stars,
+            smoothness: parseFloat(smoothness.toFixed(1))
+        });
+    }
+}
+
+function isSessionComplete() {
+    return gameSession.active && gameSession.levels.length === levels.length;
+}
+
+function getSessionTotalTime() {
+    return gameSession.levels.reduce((sum, level) => sum + level.time, 0);
+}
+
+function getSessionAverageStars() {
+    const totalStars = gameSession.levels.reduce((sum, level) => sum + level.stars, 0);
+    return parseFloat((totalStars / gameSession.levels.length).toFixed(1));
+}
+
+function resetGameSession() {
+    gameSession = {
+        active: false,
+        startTime: null,
+        levels: []
+    };
+}
 
 // Ending animation state
 let endingTime = 0;
@@ -260,6 +397,11 @@ function initLevel(levelNum) {
     // Reset smoothness tracking
     totalSpeedChange = 0;
     lastSpeed = level.startSpeed;
+
+    // Start a new game session when beginning level 1
+    if (levelNum === 1) {
+        startGameSession();
+    }
 
     // Create traffic lights for this level
     trafficLights = level.lights.map(config => ({
@@ -451,6 +593,14 @@ restartButton.addEventListener('click', () => {
     initLevel(currentLevel);
 });
 
+// Leaderboard button handler
+const leaderboardBtn = document.getElementById('viewLeaderboard');
+if (leaderboardBtn) {
+    leaderboardBtn.addEventListener('click', () => {
+        showLeaderboard();
+    });
+}
+
 // Message display
 function showMessage(title, text, buttonText, buttonAction) {
     messageTitle.textContent = title;
@@ -470,8 +620,146 @@ function hideMessage() {
     messageDiv.style.display = 'none';
 }
 
+// Username prompt UI
+function showUsernamePrompt(onSubmit, onSkip) {
+    const promptDiv = document.getElementById('usernamePrompt');
+    const input = document.getElementById('usernameInput');
+    const errorText = document.getElementById('usernameError');
+    const submitBtn = document.getElementById('usernameSubmit');
+    const skipBtn = document.getElementById('usernameSkip');
+
+    // Pre-fill with stored username if available
+    const storedUsername = getStoredUsername();
+    if (storedUsername) {
+        input.value = storedUsername;
+    } else {
+        input.value = '';
+    }
+
+    errorText.textContent = '';
+    promptDiv.style.display = 'block';
+    input.focus();
+
+    // Handle submit
+    const handleSubmit = () => {
+        const validation = validateUsername(input.value);
+
+        if (!validation.valid) {
+            errorText.textContent = validation.error;
+            return;
+        }
+
+        const username = validation.username;
+        saveUsername(username);
+        promptDiv.style.display = 'none';
+        onSubmit(username);
+    };
+
+    // Handle skip
+    const handleSkip = () => {
+        promptDiv.style.display = 'none';
+        onSkip();
+    };
+
+    // Button listeners (remove old ones first)
+    const newSubmitBtn = submitBtn.cloneNode(true);
+    submitBtn.parentNode.replaceChild(newSubmitBtn, submitBtn);
+    newSubmitBtn.addEventListener('click', handleSubmit);
+
+    const newSkipBtn = skipBtn.cloneNode(true);
+    skipBtn.parentNode.replaceChild(newSkipBtn, skipBtn);
+    newSkipBtn.addEventListener('click', handleSkip);
+
+    // Enter key submits
+    const handleKeyPress = (e) => {
+        if (e.key === 'Enter') {
+            handleSubmit();
+        }
+    };
+    input.removeEventListener('keypress', handleKeyPress);
+    input.addEventListener('keypress', handleKeyPress);
+}
+
+// Escape HTML to prevent XSS
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+// Leaderboard display UI
+async function showLeaderboard() {
+    const modal = document.getElementById('leaderboardModal');
+    const levelNum = document.getElementById('leaderboardLevelNum');
+    const entriesDiv = document.getElementById('leaderboardEntries');
+    const closeBtn = document.getElementById('leaderboardClose');
+
+    levelNum.textContent = 'Full game';
+    entriesDiv.innerHTML = '<p class="leaderboard-empty">Loading...</p>';
+    modal.style.display = 'flex';
+
+    // Fetch leaderboard data
+    const entries = await fetchLeaderboard();
+
+    if (entries.length === 0) {
+        entriesDiv.innerHTML = '<p class="leaderboard-empty">No entries yet. Complete all 7 levels to be the first!</p>';
+        setupLeaderboardCloseHandlers(modal, closeBtn);
+        return;
+    }
+
+    // Get current username to highlight player's entry
+    const currentUsername = getStoredUsername();
+
+    // Build leaderboard HTML
+    let html = '';
+    entries.forEach((entry, index) => {
+        const rank = index + 1;
+        const isTop3 = rank <= 3;
+        const isPlayer = currentUsername && entry.username === currentUsername;
+
+        let rankClass = '';
+        if (rank === 1) rankClass = 'gold';
+        else if (rank === 2) rankClass = 'silver';
+        else if (rank === 3) rankClass = 'bronze';
+
+        const entryClass = `leaderboard-entry ${isTop3 ? 'top3' : ''} ${isPlayer ? 'player' : ''}`;
+        const starDisplay = '\u2605'.repeat(Math.round(entry.averageStars)) + '\u2606'.repeat(3 - Math.round(entry.averageStars));
+
+        html += `
+            <div class="${entryClass}">
+                <div class="leaderboard-rank ${rankClass}">${rank}</div>
+                <div class="leaderboard-name">${escapeHtml(entry.username)}</div>
+                <div class="leaderboard-time">${entry.totalTime}s</div>
+                <div class="leaderboard-stars">${starDisplay}</div>
+            </div>
+        `;
+    });
+
+    entriesDiv.innerHTML = html;
+
+    setupLeaderboardCloseHandlers(modal, closeBtn);
+}
+
+function setupLeaderboardCloseHandlers(modal, closeBtn) {
+    // Close button handler
+    const newCloseBtn = closeBtn.cloneNode(true);
+    closeBtn.parentNode.replaceChild(newCloseBtn, closeBtn);
+    newCloseBtn.addEventListener('click', () => {
+        modal.style.display = 'none';
+    });
+
+    // Click outside to close
+    const clickOutsideHandler = (e) => {
+        if (e.target === modal) {
+            modal.style.display = 'none';
+            modal.removeEventListener('click', clickOutsideHandler);
+        }
+    };
+    modal.addEventListener('click', clickOutsideHandler);
+}
+
 // Game over states
-function winLevel() {
+async function winLevel() {
     gameState = 'won';
     const finishTime = gameTime;
     const isNewRecord = saveBestTime(currentLevel, finishTime);
@@ -483,6 +771,9 @@ function winLevel() {
     const stars = calculateStars(totalSpeedChange, level.finishX);
     const starDisplay = getStarDisplay(stars);
 
+    // Add this level to the game session
+    addLevelToSession(currentLevel, finishTime, stars, totalSpeedChange);
+
     let timeText = `Time: ${formatTime(finishTime)} s`;
     if (isNewRecord) {
         timeText += ' - New record!';
@@ -490,16 +781,71 @@ function winLevel() {
         timeText += ` (Best: ${formatTime(bestTime)} s)`;
     }
 
+    // Check if all 7 levels are complete
+    if (isSessionComplete()) {
+        // Full game completed! Show username prompt and submit
+        const totalTime = getSessionTotalTime();
+        const avgStars = getSessionAverageStars();
+
+        if (firebaseAvailable) {
+            showUsernamePrompt(
+                async (username) => {
+                    const submitted = await submitFullGameToLeaderboard(
+                        username,
+                        totalTime,
+                        avgStars,
+                        gameSession.levels
+                    );
+
+                    if (submitted) {
+                        proceedAfterWin(timeText, starDisplay, true, totalTime, avgStars);
+                    } else {
+                        proceedAfterWin(timeText, starDisplay, false, totalTime, avgStars);
+                    }
+                },
+                () => {
+                    // User skipped leaderboard submission
+                    proceedAfterWin(timeText, starDisplay, false, totalTime, avgStars);
+                }
+            );
+        } else {
+            // No Firebase available
+            proceedAfterWin(timeText, starDisplay, false, totalTime, avgStars);
+        }
+    } else {
+        // Not all levels complete yet, just proceed to next level
+        proceedAfterWin(timeText, starDisplay, false, null, null);
+    }
+}
+
+// Continue win flow after leaderboard handling
+function proceedAfterWin(timeText, starDisplay, submitted, totalTime, avgStars) {
+    const level = levels[currentLevel - 1];
+
+    let messageText = `"${level.name}"\n${starDisplay}\n${timeText}`;
+
+    // Add full game stats if all levels complete
+    if (totalTime !== null) {
+        messageText += `\n\nFull Game Complete!`;
+        messageText += `\nTotal Time: ${formatTime(totalTime)} s`;
+        messageText += `\nAverage: ${getStarDisplay(Math.round(avgStars))}`;
+    }
+
+    if (submitted) {
+        messageText += '\n\nScore submitted to leaderboard!';
+    }
+
     if (currentLevel >= levels.length) {
         // Start the ending animation instead of showing a message
         gameState = 'ending';
         endingTime = 0;
         hideMessage();
+        resetGameSession();
         return;
     } else {
         showMessage(
             'Level complete!',
-            `"${levels[currentLevel - 1].name}"\n${starDisplay}\n${timeText}`,
+            messageText,
             'Next level',
             () => initLevel(currentLevel + 1)
         );
