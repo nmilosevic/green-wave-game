@@ -1859,7 +1859,7 @@ function drawEndingAnimation(time) {
 
     // Center light bar
     ctx.fillStyle = '#991111';
-    ctx.fillRect(carX - 25, carY + 14, 50, 4);
+    ctx.fillRect(carX - 25, carY + 18, 50, 4);
 
     // === TRUNK LID LINE ===
     ctx.strokeStyle = bodyDark;
@@ -1913,11 +1913,11 @@ function drawEndingAnimation(time) {
     // === BRAND BADGE (center) ===
     ctx.fillStyle = '#888';
     ctx.beginPath();
-    ctx.arc(carX, carY + 32, 5, 0, Math.PI * 2);
+    ctx.arc(carX, carY + 10, 5, 0, Math.PI * 2);
     ctx.fill();
     ctx.fillStyle = '#666';
     ctx.beginPath();
-    ctx.arc(carX, carY + 32, 3, 0, Math.PI * 2);
+    ctx.arc(carX, carY + 10, 3, 0, Math.PI * 2);
     ctx.fill();
 
     // Fade in text after a moment
