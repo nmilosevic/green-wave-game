@@ -54,6 +54,15 @@
             font-weight: bold;
         }
 
+        .hud-button:hover {
+            background: rgba(78, 204, 163, 0.2);
+            transition: background 0.2s;
+        }
+
+        .hud-button:active {
+            transform: scale(0.98);
+        }
+
         #canvasWrapper {
             width: 100%;
             max-width: 1000px;
@@ -420,6 +429,236 @@
                 font-size: 16px;
             }
         }
+
+        /* Username Prompt Modal */
+        #usernamePrompt {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.95);
+            color: #fff;
+            padding: 40px 60px;
+            border-radius: 15px;
+            text-align: center;
+            display: none;
+            z-index: 101;
+            min-width: 300px;
+        }
+
+        #usernamePrompt h2 {
+            font-size: 32px;
+            margin-bottom: 15px;
+            color: #4ecca3;
+        }
+
+        #usernamePrompt p {
+            font-size: 16px;
+            margin-bottom: 20px;
+            color: #ccc;
+        }
+
+        #usernameInput {
+            width: 100%;
+            padding: 12px;
+            font-size: 16px;
+            border: 2px solid #4ecca3;
+            border-radius: 8px;
+            background: #1a1a2e;
+            color: #fff;
+            text-align: center;
+            margin-bottom: 10px;
+        }
+
+        #usernameInput:focus {
+            outline: none;
+            border-color: #3ab386;
+            box-shadow: 0 0 10px rgba(78, 204, 163, 0.3);
+        }
+
+        #usernameError {
+            color: #e74c3c;
+            font-size: 14px;
+            min-height: 20px;
+            margin-bottom: 10px;
+        }
+
+        #usernameButtons {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+        }
+
+        #usernameButtons button {
+            background: #4ecca3;
+            color: #1a1a2e;
+            border: none;
+            padding: 12px 30px;
+            font-size: 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: transform 0.1s;
+        }
+
+        #usernameButtons button:hover {
+            transform: scale(1.05);
+        }
+
+        #usernameSkip {
+            background: #666 !important;
+        }
+
+        @media (max-width: 480px) {
+            #usernamePrompt {
+                padding: 30px 30px;
+                min-width: 250px;
+            }
+
+            #usernamePrompt h2 {
+                font-size: 24px;
+            }
+
+            #usernameInput {
+                font-size: 14px;
+                padding: 10px;
+            }
+
+            #usernameButtons {
+                flex-direction: column;
+                gap: 10px;
+            }
+        }
+
+        /* Leaderboard Modal */
+        #leaderboardModal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 102;
+        }
+
+        #leaderboardContent {
+            background: rgba(0, 0, 0, 0.95);
+            color: #fff;
+            padding: 40px;
+            border-radius: 15px;
+            max-width: 600px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        #leaderboardContent h2 {
+            font-size: 28px;
+            margin-bottom: 25px;
+            color: #4ecca3;
+            text-align: center;
+        }
+
+        #leaderboardEntries {
+            margin-bottom: 25px;
+        }
+
+        .leaderboard-entry {
+            display: grid;
+            grid-template-columns: 40px 1fr 80px 60px;
+            gap: 15px;
+            padding: 12px;
+            margin-bottom: 8px;
+            background: rgba(78, 204, 163, 0.1);
+            border-radius: 8px;
+            align-items: center;
+        }
+
+        .leaderboard-entry.top3 {
+            background: rgba(78, 204, 163, 0.2);
+        }
+
+        .leaderboard-entry.player {
+            background: rgba(255, 204, 0, 0.2);
+            border: 2px solid #ffcc00;
+        }
+
+        .leaderboard-rank {
+            font-size: 20px;
+            font-weight: bold;
+            color: #4ecca3;
+            text-align: center;
+        }
+
+        .leaderboard-rank.gold { color: #ffd700; }
+        .leaderboard-rank.silver { color: #c0c0c0; }
+        .leaderboard-rank.bronze { color: #cd7f32; }
+
+        .leaderboard-name {
+            font-size: 16px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .leaderboard-time {
+            font-size: 16px;
+            color: #4ecca3;
+            text-align: right;
+        }
+
+        .leaderboard-stars {
+            font-size: 14px;
+            text-align: right;
+        }
+
+        .leaderboard-empty {
+            text-align: center;
+            color: #888;
+            padding: 40px 20px;
+        }
+
+        #leaderboardClose {
+            background: #4ecca3;
+            color: #1a1a2e;
+            border: none;
+            padding: 12px 30px;
+            font-size: 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            width: 100%;
+            transition: transform 0.1s;
+        }
+
+        #leaderboardClose:hover {
+            transform: scale(1.02);
+        }
+
+        @media (max-width: 480px) {
+            #leaderboardContent {
+                padding: 25px 20px;
+            }
+
+            #leaderboardContent h2 {
+                font-size: 22px;
+                margin-bottom: 20px;
+            }
+
+            .leaderboard-entry {
+                grid-template-columns: 35px 1fr 70px;
+                gap: 10px;
+                padding: 10px;
+                font-size: 14px;
+            }
+
+            .leaderboard-stars {
+                grid-column: 2;
+                text-align: left;
+                font-size: 12px;
+            }
+        }
     </style>
 </head>
 <body>
@@ -438,6 +677,7 @@
             <div class="hud-item">Speed: <span id="speedDisplay" aria-live="polite">0</span> km/h</div>
             <div class="hud-item">Lights passed: <span id="lightsDisplay" aria-live="polite">0</span>/<span id="totalLightsDisplay" aria-live="polite">0</span></div>
             <div class="hud-item">Time: <span id="timeDisplay" aria-live="off">0.0</span> s</div>
+            <div class="hud-item hud-button" id="viewLeaderboard" style="cursor: pointer;">Leaderboard</div>
         </section>
         <div id="canvasWrapper">
             <canvas id="gameCanvas" width="1000" height="400" aria-label="Green Wave game canvas - use W or Arrow Up to accelerate, S or Arrow Down to brake" role="img"></canvas>
@@ -459,6 +699,32 @@
         <p id="messageText">You caught the green wave!</p>
         <button id="messageButton">Next level</button>
     </div>
+
+    <div id="usernamePrompt" role="dialog" aria-labelledby="usernameTitle" aria-describedby="usernameDesc">
+        <h2 id="usernameTitle">New Record!</h2>
+        <p id="usernameDesc">Enter your username for the leaderboard:</p>
+        <input type="text" id="usernameInput" maxlength="20" placeholder="Your name" autocomplete="off" />
+        <p id="usernameError"></p>
+        <div id="usernameButtons">
+            <button id="usernameSubmit">Submit</button>
+            <button id="usernameSkip">Skip</button>
+        </div>
+    </div>
+
+    <div id="leaderboardModal" role="dialog" aria-labelledby="leaderboardTitle">
+        <div id="leaderboardContent">
+            <h2 id="leaderboardTitle">Leaderboard - <span id="leaderboardLevelNum">Full game</span></h2>
+            <div id="leaderboardEntries">
+                <!-- Populated dynamically -->
+            </div>
+            <button id="leaderboardClose">Close</button>
+        </div>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+    <script src="firebase-config.js"></script>
 
     <script src="game.js"></script>
 </body>
