@@ -340,8 +340,30 @@ function getCurrentPhaseDuration(light, time) {
 // Detect device type
 const isMobileDevice = () => {
     return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
-        || window.matchMedia('(max-width: 768px)').matches;
+        || window.matchMedia('(max-width: 768px)').matches
+        || ('ontouchstart' in window);
 };
+
+// Show mobile controls on mobile/tablet devices
+function setupMobileControls() {
+    const mobileControls = document.getElementById('mobileControls');
+    const desktopControls = document.getElementById('controls');
+
+    if (isMobileDevice()) {
+        mobileControls.style.display = 'flex';
+        desktopControls.style.display = 'none';
+    } else {
+        mobileControls.style.display = 'none';
+        desktopControls.style.display = 'block';
+    }
+}
+
+// Call setup on page load
+setupMobileControls();
+
+// Re-check on resize/orientation change
+window.addEventListener('resize', setupMobileControls);
+window.addEventListener('orientationchange', setupMobileControls);
 
 // Input handling - Keyboard
 document.addEventListener('keydown', (e) => {
