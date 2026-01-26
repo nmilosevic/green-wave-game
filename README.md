@@ -2,6 +2,8 @@
 
 A puzzle-driving game about timing, patience, and catching the perfect rhythm of city traffic lights.
 
+**Play the game:** [https://nmilosevic.github.io/green-wave-game/](https://nmilosevic.github.io/green-wave-game/)
+
 ## The Story Behind the Game
 
 When I was a kid, my dad would drive me into the city. There was one particular street we'd always pass through, and every time, he'd tell me about the "green wave" - how traffic engineers had carefully synchronized the lights so that if you drove at just the right speed, you'd glide through intersection after intersection without ever stopping. The lights would turn green one after another, like magic, as if the city itself was letting you through.
